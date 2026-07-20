@@ -1,0 +1,36 @@
+{
+  "name": "newztable_backend",
+  "version": "1.0.0",
+  "description": "Backend for the NewzTable web and mobile app",
+  "homepage": "https://github.com/segun-aiyepeks/NewzTable#readme",
+  "bugs": {
+    "url": "https://github.com/segun-aiyepeks/NewzTable/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/segun-aiyepeks/NewzTable.git"
+  },
+  "license": "ISC",
+  "author": "aiyepeks",
+  "type": "commonjs",
+  "main": "index.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "nodemon src/server.js",
+    "fetch:once": "node src/scripts/runFetchOnce.js"
+  },
+  "dependencies": {
+    "axios": "^1.18.1",
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "express-rate-limit": "^8.6.0",
+    "helmet": "^8.3.0",
+    "mongoose": "^9.7.4",
+    "morgan": "^1.11.0",
+    "node-cron": "^4.6.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.14"
+  }
+}
