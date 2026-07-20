@@ -15,8 +15,7 @@ const userSchema = new mongoose.Schema(
         },
         darkMode: { type: Boolean, default: false},
         pushEnabled: {type: Boolean, default: false},
-        fcmToken: { type: Boolean, default: false},
-        pushEnabled: {type: String, default: null },
+        fcmToken: { type: String, default: null },
         lastSeenAt: { type: Date, default: Date.now}
     },
     { timestamps: true }
