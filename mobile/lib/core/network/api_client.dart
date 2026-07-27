@@ -26,6 +26,16 @@ class ApiClient {
     _dio.options.headers['X-Device-Id'] = deviceId;
   }
 
+  static Future<Response> get(
+    String endpoint, {
+      Map<String, dynamic>? queryParameters
+    }) async {
+      return await _dio.get(
+        endpoint,
+        queryParameters: queryParameters
+      );
+    }
+
   static Future<Response> post(
     String endpoint, {
       Map<String, dynamic>? data
@@ -37,7 +47,7 @@ class ApiClient {
     String endpoint, {
       Map<String, dynamic>? data
     }) async {
-      return await _dio.post(endpoint, data: data);
+      return await _dio.put(endpoint, data: data);
   }
 
   static Future<Response> delete(String endpoint) async {
