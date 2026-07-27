@@ -14,4 +14,4 @@ const TOPICS = {
 const TOPIC_KEYS = Object.keys(TOPICS);
 const isValidTopic = (key) => TOPIC_KEYS.includes(key);
 
-module.exports = {TOPICS, TOPIC_KEYS, isValidTopic };
+module.exports = { TOPICS, TOPIC_KEYS, isValidTopic };

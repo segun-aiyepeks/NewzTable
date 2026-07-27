@@ -1,11 +1,11 @@
 const User = require('../models/User');
-const { isVaidTopic } = require('../constants/topics');
+const { isValidTopic } = require('../constants/topics');
 
 function validateTopics(topics) {
     if (!Array.isArray(topics) || topics.length === 0) {
         return 'topics must be a non-empty array';
     }
-    if (!topics.every(isVaidTopic)) {
+    if (!topics.every(isValidTopic)) {
         return 'topic contains an unknown topic key';
     }
     return null;

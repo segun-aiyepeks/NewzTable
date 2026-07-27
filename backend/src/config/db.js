@@ -18,3 +18,5 @@ async function connectDB() {
         console.error(`[db] connection error: `, err.message);
     })
 }
+
+module.exports = connectDB;
