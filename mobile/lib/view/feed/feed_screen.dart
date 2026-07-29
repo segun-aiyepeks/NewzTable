@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:newztable/model/feed_item_model.dart';
+import 'package:newztable/view/article/article_screen.dart';
 import 'package:newztable/view/widgets/ad_card.dart';
 import 'package:newztable/view/widgets/article_card.dart';
 import 'package:newztable/view/widgets/error_view.dart';
@@ -104,7 +105,7 @@ class _FeedScreenState extends State<FeedScreen> {
     return AdCard(slotId: item.slotId!);
   }
   final article = item.article!;
-  
+
   return Consumer<BookmarkViewModel>(
     builder: (context, bookmarkViewModel, _) {
       return ArticleCard(
