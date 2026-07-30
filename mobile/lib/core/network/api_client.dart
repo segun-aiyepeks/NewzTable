@@ -19,10 +19,7 @@ class ApiClient {
     _ErrorInterceptor()
   ]);
 
-  static String? _deviceId;
-
   static void setDeviceId(String deviceId) {
-    _deviceId = deviceId;
     _dio.options.headers['X-Device-Id'] = deviceId;
   }
 
