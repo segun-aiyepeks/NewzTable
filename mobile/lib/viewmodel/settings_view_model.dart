@@ -19,7 +19,7 @@ class SettingsViewModel extends ChangeNotifier {
   String get errorMessage => _errorMessage;
 
   Future<void> loadSettings() async {
-    _setState(SettingsState.loading);
+    Future.microtask(() => _setState(SettingsState.loading));
 
     try {
       final prefs = await SharedPreferences.getInstance();

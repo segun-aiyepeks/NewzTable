@@ -27,7 +27,7 @@ class _ArticleScreenState extends State<ArticleScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final articleViewModel = context.read<ArticleViewModel>();
       articleViewModel.setBookmarkStatus(widget.isBookmarked);
-      articleViewModel.fetchArticle(widget.article.id);
+      articleViewModel.fetchRelatedArticles(widget.article.id, widget.article.topic);
     });
   }
 

@@ -67,6 +67,22 @@ class ArticleViewModel extends ChangeNotifier {
     }
   }
 
+  Future<void> fetchRelatedArticles(String articleId, String topic) async {
+    _article = null;
+    _setState(ArticleState.loading);
+
+    try {
+      final response = await ApiClient.get('/api/articles/$articleId');
+      final data = response.data as Map<String, dynamic>;
+
+      final List<dynamic> related = data['related'] as List<dynamic>;
+      _relatedArticles = related.map((json) => ArticleModel.fromJson(json as Map<String, dynamic>)).toList();
+    } catch(e) {
+      _errorMessage = e.toString();
+      _setState(ArticleState.error);
+    }
+  }
+
   void setBookmarkStatus(bool isBookmarked) {
     _isBookmarked = isBookmarked;
     notifyListeners();

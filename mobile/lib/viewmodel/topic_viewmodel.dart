@@ -65,7 +65,7 @@ class TopicViewModel extends ChangeNotifier {
       await ApiClient.post(
         AppConstants.initUserEndpoint,
         data: {
-          'devideId': deviceId,
+          'deviceId': deviceId,
           'topics': topicKeys
         }
       );
