@@ -156,9 +156,16 @@ class _ArticleScreenState extends State<ArticleScreen> {
                       if(articleViewModel.state == ArticleState.loading)
                         const ShimmerList(itemCount: 3),
                       if(articleViewModel.state == ArticleState.error)
-                        ErrorView(
-                          message: articleViewModel.errorMessage, 
-                          onRetry: () => articleViewModel.fetchArticle(widget.article.id)
+                        Padding(
+                          padding: EdgeInsets.symmetric(vertical: 8),
+                          child: Text(
+                            'Could not load related articles',
+                            style: TextStyle(
+                              color: Theme.of(context).colorScheme.outline,
+                              fontSize: 13
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
                         ),
                       if(articleViewModel.state == ArticleState.success && articleViewModel.relatedArticles.isNotEmpty) ...[
                         Text(
