@@ -13,6 +13,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Folder Include="Components\" />
     <Folder Include="Layout\" />
     <Folder Include="Models\" />
     <Folder Include="Pages\" />
