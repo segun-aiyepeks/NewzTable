@@ -2,7 +2,6 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:newztable/model/article_model.dart';
 import 'package:newztable/view/widgets/article_card.dart';
-import 'package:newztable/view/widgets/error_view.dart';
 import 'package:newztable/view/widgets/shimmer_card.dart';
 import 'package:newztable/viewmodel/article_view_model.dart';
 import 'package:newztable/viewmodel/bookmark_view_model.dart';
