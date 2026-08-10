@@ -1,0 +1,22 @@
+# Visual Studio cache/metadata folder
+.vs/
+
+# Build results
+bin/
+obj/
+
+# Visual Studio files
+*.sln.iml
+*.user
+
+# Local development
+.env
+.env.local
+
+# IDE
+.idea/
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db
