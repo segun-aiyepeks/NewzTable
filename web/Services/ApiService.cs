@@ -108,7 +108,7 @@ namespace web.Services
         }
     }
 
-    public class SearchRespons
+    public class SearchResponse
     {
         public int Page { get; set; }
         public int Total { get; set; }
