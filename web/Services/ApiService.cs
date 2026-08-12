@@ -23,7 +23,13 @@ namespace web.Services
             _httpClient.DefaultRequestHeaders.Remove("X-Device-Id");
             _httpClient.DefaultRequestHeaders.Add("X-Device-Id", deviceId);
         }
-        public async Task<FeedResponse> GetFeed(int page = 1, int limit = 20)
+
+        public async Task<List<TopicModel>> GetTopicsAsync()
+        {
+            var result = await _httpClient.GetFromJsonAsync<List<TopicModel>>("api/articles/topics", _jsonOptions);
+            return result ?? new List<TopicModel>();
+        }
+        public async Task<FeedResponse> GetFeedAsync(int page = 1, int limit = 20)
         {
             var result = await _httpClient.GetFromJsonAsync<FeedResponse>(
                 $"api/articles/feed?page={ page}&limit ={limit}",
