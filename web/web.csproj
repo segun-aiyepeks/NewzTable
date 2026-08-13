@@ -16,8 +16,6 @@
     <Folder Include="Components\" />
     <Folder Include="Layout\" />
     <Folder Include="Pages\" />
-    <Folder Include="Services\" />
-    <Folder Include="ViewModels\" />
     <Folder Include="wwwroot\NewFolder\" />
     <Folder Include="wwwroot\sample-data\" />
   </ItemGroup>

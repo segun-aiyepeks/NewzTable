@@ -25,7 +25,7 @@ namespace web.ViewModels
 
         public async Task FetchFeedAsync(bool refresh = false)
         {
-            if(refresh)
+            if (refresh)
             {
                 _currentPage = 1;
                 HasMore = true;
@@ -49,9 +49,26 @@ namespace web.ViewModels
                 {
                     FeedItems = newItems;
                 }
+                else
+                {
+                    FeedItems = new List<FeedItemModel>(FeedItems);
+                    FeedItems.AddRange(newItems);
+                }
+            }
+            catch (Exception ex)
+            {
+                IsRefreshing = false;
+                ErrorMessage = ex.Message;
+                SetState(FeedState.Error);
             }
         }
-
+        public async Task LoadMoreAsync() {
+            if (!HasMore || State == FeedState.LoadingMore) return;
+            await FetchFeedAsync();
+        }
+        public async Task RefreshAsync() {
+            await FetchFeedAsync(refresh: true);
+        }
         private void SetState(FeedState state)
         {
             State = state;
