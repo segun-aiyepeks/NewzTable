@@ -40,6 +40,19 @@ namespace web.ViewModels
             IsOnboarded = true;
             NotifyStateChanged();
         }
+
+        public async Task ToggleDarkModeAsync()
+        {
+            IsDarkMode = !IsDarkMode;
+            await _localStorage.SaveDarkModeAsync(IsDarkMode);
+
+            try
+            {
+                await _apiService.UpdatePreferencesAsync(darkMode: IsDarkMode);
+            } catch { }
+
+            NotifyStateChanged();
+        }
         public async Task ClearLocalDataAsync()
         {
             await _localStorage.ClearAsync();

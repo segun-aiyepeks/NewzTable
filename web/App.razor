@@ -1,4 +1,6 @@
-﻿<Router AppAssembly="@typeof(App).Assembly">
+﻿@using web.Layout
+
+<Router AppAssembly="@typeof(App).Assembly">
     <Found Context="routeData">
         <RouteView RouteData="@routeData" DefaultLayout="@typeof(MainLayout)" />
         <FocusOnNavigate RouteData="@routeData" Selector="h1" />
@@ -6,7 +8,20 @@
     <NotFound>
         <PageTitle>Not found</PageTitle>
         <LayoutView Layout="@typeof(MainLayout)">
-            <p role="alert">Sorry, there's nothing at this address.</p>
+            <MudContainer Class="state-container">
+                <div class="state-icon-circle" style="background-color: var(--mud-palette-error-containeer)">
+                    <MudIcon Icon="@Icons.Material.Outlined.SearchOff" Style="color:var(--mud-palette-error)" Size="Size.Large" />
+                </div>
+                <MudText Typo="Typo.h6" Align="Align.Center">
+                    Page not Found...
+                </MudText>
+                <MudText Typo="Typo.body2" Align="Align.Center" Color="Color.Secondary">
+                    The page you are looking for does not exist.
+                </MudText>
+                <MudButton Variant="Variant.Filled" Color="Color.Primary" Href="/" StartIcon="@Icons.Material.Outlined.Home">
+                    Go Home
+                </MudButton>
+            </MudContainer>
         </LayoutView>
     </NotFound>
 </Router>

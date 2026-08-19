@@ -14,7 +14,6 @@
 
   <ItemGroup>
     <Folder Include="Components\" />
-    <Folder Include="Layout\" />
     <Folder Include="Pages\" />
     <Folder Include="wwwroot\NewFolder\" />
     <Folder Include="wwwroot\sample-data\" />

@@ -1,0 +1,98 @@
+﻿@inherits LayoutComponentBase
+@inject AppStateViewModel AppState
+@inject NavigationManager Navigation
+
+<MudThemeProvider @bind-IsDarkMode="@_isDarkMode" Theme="_theme" />
+<MudDialogProvider />
+<MudSnackbarProvider />
+
+@if (!AppState.IsInitialized)
+{
+    <MudContainer Style="display:flex; justify-content: center; align-items: center; height:100vh">
+        <MudProgressCircular Color="Color.Primary" Indeterminate="true" Size="Size.Large" />
+    </MudContainer>
+}
+else if (!AppState.IsOnboarded)
+{
+    <@OnboardingPage />
+} else
+{
+    <MudLayout>
+        <MudAppBar Elevation="1" Dense="true">
+            <MudText Typo="Typo.h6" Style="font-weight:800; color:var(--mud-palette-primary)">NewzTable</MudText>
+            <MudSpacer />
+            <MudIconButton 
+                Icon="@(AppState.IsDarkMode? Icons.Material.Filled.LightMode: Icons.Material.Filled.DarkMode)"
+                Color="Color.Inherit"
+                OnClick="@(() => AppState.ToggleDarkModeAsync())"/>
+        </MudAppBar>
+        <MudDrawer Open="true" Variant="DrawerVariant.Responsive" Breakpoint="Breakpoint.Md" Elevation="2">
+            <MudDrawerHeader>
+                <MudText Typo="Typo.subtitle1" Style="font-weight:700">NewzTable</MudText>
+            </MudDrawerHeader>
+            <MudNavMenu>
+                <MudNavLink Href="/" Match="NavLinkMatch.All" Icon="@Icons.Material.Outlined.Home">Home</MudNavLink>
+                <MudNavLink Href="/search" Icon="@Icons.Material.Outlined.Search">Search</MudNavLink>
+                <MudNavLink Href="/bookmarks" Icon="@Icons.Material.Outlined.Bookmark">Saved</MudNavLink>
+                <MudNavLink Href="/settings" Icon="@Icons.Material.Outlined.Settings">Settings</MudNavLink>
+            </MudNavMenu>
+        </MudDrawer>
+
+        <MudMainContent>
+            <MudContainer MaxWidth="MaxWidth.Medium" class="py-4">
+                @Body
+            </MudContainer>
+        </MudMainContent>
+    </MudLayout>
+}
+
+@code {
+    private bool _isDarkMode;
+    private MudTheme _theme = new MudTheme()
+        {
+            PaletteLight = new PaletteLight()
+            {
+                Primary = "#1A73E8",
+                Secondary = "#4285F4",
+                AppbarBackground = "#FFFFFF",
+                AppbarText = "#1A73E8",
+                Background = "#F8F9FA",
+                Surface = "#FFFFFF",
+                DrawerBackground = "#FFFFFF"
+            },
+            PaletteDark = new PaletteDark()
+            {
+                Primary = "#4285F4",
+                Secondary = "#1A73E8",
+                AppbarBackground = "#1E1E2E",
+                Background = "#121212",
+                Surface = "#1E1E2E",
+                DrawerBackground = "#1E1E2E"
+            },
+            Typography = new Typography()
+            {
+                Default = new DefaultTypography()
+                {
+                    FontFamily = new[] { "Roboto", "sans-serif" }
+                }
+            }
+        };
+
+    protected override async Task OnInitializedAsync()
+    {
+        await AppState.InitializeAsync();
+        _isDarkMode = AppState.IsDarkMode;
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private void OnAppStateChanged()
+    {
+        _isDarkMode = AppState.IsDarkMode;
+        InvokeAsync(StateHasChanged);
+    }
+
+    public void Dispoe()
+    {
+        AppState.OnChange -= OnAppStateChanged;
+    }
+}
