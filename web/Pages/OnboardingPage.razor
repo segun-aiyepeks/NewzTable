@@ -1,0 +1,85 @@
+﻿@inject TopicViewModel TopicVM
+@inject AppStateViewModel AppState
+@inject NavigationManager Navigation
+
+
+<div class="onboarding-container">
+    <MudText Typo="Typo.h4" Style="font-weight:800; margin-top:8px">
+        What are you interested in?
+    </MudText>
+    <MudText Typo="Typo.h4" Color="Color.Secondary" Style="margin-top:8px; margin-bottom:32px">
+        Pick at least three topics to personalize your feed.
+    </MudText>
+
+    @if (TopicVM.State == TopicState.Loading && !TopicVM.AvailableTopics.Any()){
+        <MudProgressLinear Color="Color.Primary" Indeterminate="true" Class="mb-4" />
+    } 
+    else if(TopicVM.State == TopicState.Error && !TopicVM.AvailableTopics.Any())
+    {
+        <div class="state-container">
+            <MudText Color="Color.Error">@TopicVM.ErrorMessage</MudText>
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="@(() => TopicVM.FetchAvailableTopicsAsync())">
+                Try Again
+            </MudButton>
+        </div>    
+    }
+    else
+    {
+        <div style="display:flex; flex-wrap:wrap; gap:10px; margin-bottom:32px">
+            @foreach(var topic in TopicVM.AvailableTopics)
+            {
+                var isSelected = TopicVM.isSelected(topic);
+                <div class="topic-chip-select" onclick="@(() => TopicVM.ToggleTopic(topic))">
+                    <MudChip T="string" Color="@(isSelected ? Color.Primary: Color.Default)" Variant="@(isSelected ? Variant.Filled : Variant.Outlined)" Icon="@(isSelected ? Icons.Material.Filled.Check : null)">
+                        @topic.Label
+                    </MudChip>
+                </div>
+            }
+        </div>
+
+        @if(TopicVM.State == TopicState.Error)
+        {
+            <MudText Color="Color.Error" Align="Align.Center" Class="mb-2">
+                @TopicVM.ErrorMessage
+            </MudText>
+        }
+
+        <MudButton FullWidth="true" Variant="Variant.Filled" Color="Color.Primary" Size="Size.Large" Disabled ="(!TopicVM.HasEnoughTopics || TopicVM.State == TopicState.Loading)" OnClick="@OnConfirm" Style="padding:14px; border-radius:12px; font-size:16px; font-weight:600">
+            @if(TopicVM.State == TopicState.Loading)
+            {
+                <MudProgressCircular Size="Size.Small" Indeterminate="true" Color="Color.Inherit" />
+            }
+            else if (!TopicVM.SelectedTopics.Any())
+            {
+                <span>Select at least 3 topics</span>
+            }
+            else
+            {
+                <span>@TopicVM.SelectedTopics.Count selected - Continue</span>
+            }
+        </MudButton>
+    }
+</div>
+
+@code {
+    protected override async Task OnInitializedAsync()
+    {
+        TopicVM.onChange += StateHasChanged;
+        await TopicVM.FetchAvailableTopicsAsync();
+    }
+
+    private async Task OnConfirm()
+    {
+        var success = await TopicVM.InitUserAsync(AppState.DeviceId);
+        if (success)
+        {
+            await AppState.CompleteOnboardingAsync(TopicVM.SelectedTopics.Select(t => t.Key).ToList());
+            Navigation.NavigateTo("/");
+        }
+    }
+
+    public void Dispose()
+    {
+        TopicVM.onChange -= StateHasChanged;
+    }
+}
