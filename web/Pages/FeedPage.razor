@@ -1,0 +1,94 @@
+﻿@page "/"
+@inject FeedViewModel FeedVM
+@inject BookmarkViewModel BookmarkVM
+@inject ArticleViewModel ArticleVM
+@inject NavigationManager Navigation
+
+<PageTitle> NewzTable - Home</PageTitle>
+
+@if(FeedVM.State == FeedState.Loading && !FeedVM.FeedItems.Any())
+{
+    <div class="feed-container">
+        @for (int i = 0; i < 6; i++)
+        {
+            <ShimmerCard />
+        }
+    </div>
+}
+else if (FeedVM.State == FeedState.Error && !FeedVM.FeedItems.Any())
+{
+    <ErrorView Message="@FeedVM.ErrorMessage" OnRetry="@(() => FeedVM.FetchFeedAsync())" />
+}
+else if (FeedVM.IsEmpty)
+{
+    <EmptyView Icon="@Icons.Material.Outlined.Newspaper" title="No articles yet" Message="Your feed is being prepared. Try refreshing." />
+}
+else
+{
+    <div class="feed-container">
+        @foreach(var item in FeedVM.FeedItems)
+        {
+            @if (item.IsAd)
+            {
+                <AdCard SlotId="@item.SlotId!" />
+            } else
+            {
+                <ArticleCard 
+                    Article="@item.Article!"
+                    IsBookmarked="@BookmarkVM.IsBookmarked"
+                    OnArticleTap="@(() => OnArticleTap(item.Article!))"
+                    OnBookmarkTap="@(() => OnBookmarkTap(item.Article!))" />
+            }
+            
+            @if(FeedVM.State == FeedState.LoadingMore)
+            {
+                <div style="display:flex; justify-content: center; padding: 16px">
+                    <MudProgressCircular Color="Color.Primary" Indeterminate="true" />
+                </div>
+            }
+        }
+    </div>
+}
+
+<h3>FeedPage</h3>
+
+@code {
+    protected override async Task OnInitializedAsync()
+    {
+        FeedVM.OnChange += StateHasChanged;
+        BookmarkVM.OnChange += StateHasChanged;
+
+        if (!FeedVM.FeedItems.Any())
+        {
+            await FeedVM.FetchFeedAsync();
+        }
+    }
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+            await BookmarkVM.FetchBookmarksAsync();
+    }
+
+    private void OnArticleTap(ArticleModel article)
+    {
+        ArticleVM.SetArticle(article, BookmarkVM.IsBookmarked(article.Id));
+        Navigation.NavigateTo($"/article/{article.Id}");
+    }
+
+    private async Task OnBookmarkTap(ArticleModel article)
+    {
+        if (BookmarkVM.IsBookmarked(article.Id))
+        {
+            await BookmarkVM.RemoveBookmarkAsync(article.Id);
+        } else
+        {
+            await BookmarkVM.AddBookmarkAsync(article.Id);
+        }
+    }
+
+    public void Dispose()
+    {
+        FeedVM.OnChange -= StateHasChanged;
+        BookmarkVM.OnChange -= StateHasChanged;
+    }
+}
