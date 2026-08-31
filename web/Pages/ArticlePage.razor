@@ -1,0 +1,129 @@
+﻿@page "/article/{ArticleId}"
+@inject ArticleViewModel ArticleVM
+@inject BookmarkViewModel BookmarkVM
+@inject NavigationManager Navigation
+
+<PageTitle>@(ArticleVM.CurrentArticle?.Title ?? "Article") - NewzTable</PageTitle>
+
+@if(ArticleVM.CurrentArticle == null && ArticleVM.State == ArticleState.Loading)
+{
+    <div style="display:flex; justify-content: center; padding: 64px">
+        <MudProgressCircular Color="Color.Primary" Indeterminate="true" />
+    </div>
+}
+else if(ArticleVM.CurrentArticle == null && ArticleVM.State == ArticleState.Error)
+{
+    <ErrorView Message="@ArticleVM.ErrorMessage" OnRetry="@(() => ArticleVM.FetchArticleAsync(ArticleId))" />
+}
+else if(ArticleVM.CurrentArticle != null)
+{
+    var article = ArticleVM.CurrentArticle;
+
+    <div class="article-detail-container">
+        @if (!string.IsNullOrEmpty(article.ImageUrl))
+        {
+            <img src="@article.ImageUrl" alt="@article.Title" class="article-hero-image" onerror="this.style.display='none'" />   
+        }
+        <div style="margin-top:24px">
+            <div style="display:flex; align-items: center; flex-wrap:wrap; gap:8px; margin-bottom:16px" >
+                <MudChip T="string" Color="Color.Primary" Size="Size.Small" Class="topic-chip" >
+                    @article.Topic.ToUpper()
+                </MudChip>
+                <MudText Class="article-source" >
+                    @article.SourceName
+                </MudText>
+                <MudSpacer />
+                <MudText Class="article-time" >
+                    @GetTimeAgo(article.PublishedAt)
+                </MudText>
+                <MudIconButton Icon="@(ArticleVM.IsBookmarked? Icons.Material.Filled.Bookmark : Icons.Material.Outlined.BookmarkBorder)" Color="@(ArticleVM.IsBookmarked ? Color.Primary: Color.Default)" OnClick="@(()=> ArticleVM.ToggleBookmarkAsync(article.Id))" />
+            </div>
+            <MudText Typo="Typo.h5" Style="line-height:1.7; margin-bottom:16px" Color="Color.Secondary" >
+                @article.Title
+            </MudText>
+
+            @if (!string.IsNullOrEmpty(article.Description))
+            {
+                <MudText Typo="Typo.body1" Style="line-height:1.7; margin-bottom:16px" Color="Color.Secondary">
+                    @article.Description
+                </MudText>
+            }
+            @if (!string.IsNullOrEmpty(article.Content))
+            {
+                <MudText Typo="Typo.body2" Class="article-content" Style="margin-bottom:24px">
+                    @article.Content
+                </MudText>
+            }
+
+            <MudButton FullWidth="true" Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Outlined.OpenInNew" Href="@article.Url" Target="_blank" Style="padding:14px; border-radius:12px; font-size:15px; font-weight:600; margin-bottom:32px">
+                Continue Reading on @article.SourceName
+            </MudButton>
+
+            @if(ArticleVM.State == ArticleState.Loading)
+            {
+                @for(int i =0; i < 3; i++)
+                {
+                    <ShimmerCard />
+                }
+            } else if (ArticleVM.RelatedArticles.Any())
+            {
+                <MudText Typo="Typo.h6" Style="font-weight:700; margin-bottom12px">
+                    More from @article.Topic
+                </MudText>
+                @foreach(var related in ArticleVM.RelatedArticles)
+                {
+                    <ArticleCard Article="@related" isBookmarked="@BookmarkVM.IsBookmarked(related.Id)" OnArticleTap="@(()=> OnRelatedTap(related))" OnBookmarkTap="@(()=> OnBookmarkTap(related))" />
+                }
+            }
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter]
+    public string ArticleId { get; set; } = string.Empty;
+    protected override async Task OnInitializedAsync()
+    {
+        ArticleVM.OnChange += StateHasChanged;
+        BookmarkVM.OnChange += StateHasChanged;
+
+        if(ArticleVM.CurrentArticle?.Id != ArticleId)
+        {
+            await ArticleVM.FetchArticleAsync(ArticleId);
+        } else
+        {
+            await ArticleVM.FetchArticleAsync(ArticleId);
+        }
+    }
+
+    private void OnRelatedTap(ArticleModel article)
+    {
+        ArticleVM.SetArticle(article, BookmarkVM.IsBookmarked(article.Id));
+        Navigation.NavigateTo($"/article/{article.Id}", replace: true);
+    }
+
+    private async Task OnBookmarkTap(ArticleModel article)
+    {
+        await ArticleVM.ToggleBookmarkAsync(article.Id);
+        await BookmarkVM.FetchBookmarksAsync();
+    }
+
+    private string GetTimeAgo(DateTime dateTime)
+    {
+        var span = DateTime.UtcNow - dateTime.ToUniversalTime();
+
+        if (span.TotalMinutes < 1) return "just now";
+        if (span.TotalMinutes < 60) return $"{(int)span.TotalMinutes}m ago";
+        if (span.TotalHours < 24) return $"{(int)span.TotalHours}h ago";
+        if (span.TotalDays < 7) return $"{(int)span.TotalDays}d ago";
+
+        return dateTime.ToString("MMM d, yyyy");
+    }
+
+    public void Dispose()
+    {
+        ArticleVM.OnChange -= StateHasChanged;
+        BookmarkVM.OnChange -= StateHasChanged;
+    }
+
+}
