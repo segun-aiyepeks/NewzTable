@@ -87,7 +87,7 @@ namespace web.ViewModels
             }
         }
 
-        private void ClearSearch()
+        public void ClearSearch()
         {
             _debounceToken?.Cancel();
             Results = new List<ArticleModel>();

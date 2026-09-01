@@ -1,0 +1,108 @@
+﻿@page "/search"
+@inject SearchViewModel SearchVM
+@inject BookmarkViewModel BookmarkVM
+@inject ArticleViewModel ArticleVM
+@inject NavigationManager Navigation
+
+<PageTitle> Search - NewzTable</PageTitle>
+
+<div class="search-container" >
+    <MudTextField @bind-Value="_searchQuery" Placeholder="Search articles..." Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Outlined.Search" IconSize="Size.Medium" Variant="Variant.Outlined" FullWidth="true" Clearable ="true" Immediate="true" OnClearButtonClick="@(_ => OnClear())" Class="mb-4" />
+    
+    @if(SearchVM.State == SearchState.Idle)
+    {
+        <div class="state-container">
+            <div class="state-icon-circle" style="background-color:var(--mud-palette-primary-container)"> 
+                <MudIcon Icon="@Icons.Material.Outlined.Search" Style="color:var(--mud-palette-primary)" Size="Size.Large" />
+            </div>
+            <MudText Typo="Typo.h6" Align="Align.Center" Style="font-weight:700">
+                Search for anything
+            </MudText>
+            <MudText Typo="Typo.body2" Align="Align.Center" Color="Color.Secondary">
+                Find articles on bitcoin, elections, AI and more.
+            </MudText>
+        </div>
+    }
+    else if(SearchVM.State == SearchState.Loading && !SearchVM.Results.Any())
+    {
+        @for(int i = 0; i < 5; i++)
+        {
+            <ShimmerCard />
+        }
+    }
+    else if(SearchVM.State == SearchState.Error)
+    {
+        <ErrorView Icon="@Icons.Material.Outlined.SearchOff" Message="@SearchVM.ErrorMessage" OnRetry="@(()=> SearchVM.SearchAsync(_searchQuery))" />
+    }
+    else if(SearchVM.State == SearchState.Empty)
+    {
+        <div class="state-container">
+            <div class="state-icon-circle" style="background-color:var(--mud-palette-primary-container)">
+                <MudIcon Icon="@Icons.Material.Outlined.SearchOff" Style="color:var(--mud-palette-primary)" Size="Size.Large" />
+            </div>
+            <MudText Typo="Typo.h6" Align="Align.Center" Style="font-weight:700"> No results found</MudText>
+            <MudText Typo="Typo.body2" Align="Align.Center" Color="Color.Secondary"> No articles matched "@SearchVM.LastQuery". Try different keywords. </MudText>
+        </div>
+    }
+    else
+    {
+        @foreach(var article in SearchVM.Results)
+        {
+            <ArticleCard Article = "@article" IsBookmarked="@BookmarkVM.IsBookmarked(article.Id)" OnArticleTap="@(()=> OnArticleTap(article))" OnBookmarkTap ="@(()=> OnBookmarkTap(article))" />
+        }
+        @if(SearchVM.State == SearchState.Loading)
+        {
+            <div style="display:flex; justify-content: center; padding: 16px"> 
+                <MudProgressCircular Color="Color.Primary" Indeterminate="true" />
+            </div>
+        } else if (!SearchVM.HasMore)
+        {
+            <MudText Align="Align.Center" Color="Color.Secondary" Class="py-4"> End of results </MudText>
+        }
+        else
+        {
+            <div style="display:flex; justify-content:center; padding:16px">
+                <MudButton Variant="Variant.Outlined" Color="Color.Primary" OnClick="@SearchVM.LoadMoreAsync"> Load More</MudButton>
+            </div>
+        }
+    }
+</div>
+
+@code {
+    private string _searchQuery = string.Empty;
+
+    protected override void OnInitialized()
+    {
+        SearchVM.OnChange += StateHasChanged;
+        BookmarkVM.OnChange += StateHasChanged;
+    }
+
+    private async Task OnSearchChanged(string value)
+    {
+        _searchQuery = value;
+        await SearchVM.SearchAsync(value);
+    }
+    private void OnClear()
+    {
+        _searchQuery = string.Empty;
+        SearchVM.ClearSearch();
+        StateHasChanged();
+    }
+
+    private void OnArticleTap(ArticleModel article)
+    {
+        ArticleVM.SetArticle(article, BookmarkVM.IsBookmarked(article.Id));
+        Navigation.NavigateTo($"/article/{article.Id}");
+    }
+
+    private async Task OnBookmarkTap(ArticleModel article)
+    {
+        await BookmarkVM.AddBookmarkAsync(article.Id);
+    }
+
+    public void Dispose()
+    {
+        SearchVM.OnChange -= StateHasChanged;
+        BookmarkVM.OnChange -= StateHasChanged;
+    }
+}
