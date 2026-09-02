@@ -1,0 +1,187 @@
+﻿@page "/settings"
+@inject SettingsViewModel SettingsVM
+@inject TopicViewModel TopicVM
+@inject FeedViewModel FeedVM
+@inject AppStateViewModel AppState
+@inject NavigationManager Navigation
+
+<PageTitle>Settings - NewzTable</PageTitle>
+
+<MudText Typo="Typo.h6" Style="font-weight:700; margin-bottom:16px">
+    Settings
+</MudText>
+
+<MudPaper Elevation="0" Outlined="true" Style="border-radius:12px; overflow:hidden; margin-bottom:16px">
+    <MudListSubheader> PREFERENCES</MudListSubheader>
+    <MudListItem T="object">
+        <div style="display:flex;align-items:center;justify-content:space-between;width:100%">
+            <div style="display:flex; align-items:center; gap:12px">
+                <MudIcon Icon="@(AppState.IsDarkMode ? Icons.Material.Filled.DarkMode : Icons.Material.Filled.LightMode)" Color="Color.Primary" />
+                <div>
+                    <MudText Typo="Typo.body1"> Dark Mode</MudText>
+                    <MudText Typo="Typo.caption" Color="Color.Secondary"> Switch to dark theme</MudText>
+                </div>
+            </div>
+            <MudSwitch T="bool" Value="@AppState.IsDarkMode" ValueChanged="@(_ => SettingsVM.ToggleDarkModeAsync())" Color="Color.Primary" />
+        </div> 
+    </MudListItem>
+
+    <MudDivider />
+
+    <MudListSubheader> CONTENT </MudListSubheader>
+   
+    <MudListItem T="Object" OnClick="@OnEditTopics" Style="cursor:pointer">
+        <div style="display:flex; align-items:center; justify-content:space-between;width:100%">
+            <div style="display:flex; align-items:center; gap:12px">
+                <MudIcon Icon="@Icons.Material.Outlined.Topic" Color="Color.Primary" />
+                <div>
+                    <MudText Typo="Typo.body1">Edit Topics</MudText>
+                    <MudText Typo="Typo.caption" Color="Color.Secondary"> Change your personalised topics</MudText>
+                </div>
+            </div>
+            <MudIcon Icon="@Icons.Material.Outlined.ChevronRight" Color="Color.Secondary" />
+        </div>
+    </MudListItem>
+    
+    <MudDivider />
+    
+    <MudListSubheader>ABOUT</MudListSubheader>
+
+    <MudListItem T="Object">
+        <div style="display:flex;align-items:center;gap:12px">
+            <MudIcon Icon="@Icons.Material.Outlined.Fingerprint" Color="Color.Primary" />
+            <div>
+                <MudText Typo="Typo.body1">Device ID</MudText>
+                <MudText Typo="Typo.caption" Color="Color.Secondary" Style="font-family:monospace; word-break:break-all">
+                    @(string.IsNullOrEmpty(SettingsVM.DeviceId) ? "Loading..." : SettingsVM.DeviceId)
+                </MudText>
+            </div>
+        </div>
+    </MudListItem>
+
+    <MudDivider />
+
+    <MudListItem T="Object">
+        <div style="display:flex;align-items:center;gap:12px">
+            <MudIcon Icon="@Icons.Material.Outlined.Info" Color="Color.Primary" />
+            <MudText Typo="Typo.body1"> Version</MudText>
+            <MudText Typo="Typo.caption" Color="Color.Secondary">1.0.0</MudText>
+        </div>
+    </MudListItem>
+
+    <MudDivider />
+
+    <MudListSubheader> DATA </MudListSubheader>
+
+    <MudListItem T="Object" OnClick="@OnClearData" Style="cursor:pointer">
+        <div style="display:flex;align-items:center;gap:12px">
+            <MudIcon Icon="@Icons.Material.Outlined.Delete" Color="Color.Error" />
+            <div>
+                <MudText Typo="Typo.body1" Style="color:var(--mud-palette-error)"> Clear Local Data</MudText>
+                <MudText Typo="Typo.caption" Color="Color.Secondary">
+                    Reset app to initial state
+                </MudText>
+            </div>
+        </div>
+    </MudListItem>
+</MudPaper>
+
+@if (_showEditTopics)
+{
+    <MudPaper Elevation="0" Outlined="true" Style="border-radius:12px;padding:24px;margin-bottom:16px">
+        <div style="display:flex;align-items:center; justify-content:space-between;margin-bottom:16px">
+            <MudText Typo="Typo.h6" Style="font-weight:700">Edit Topics</MudText>
+            <MudIconButton Icon="@Icons.Material.Outlined.Close" OnClick="@(()=> _showEditTopics = false)" />
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:24px">
+            @foreach(var topic in TopicVM.AvailableTopics)
+            {
+                var isSelected = TopicVM.isSelected(topic);
+                <div class="topic-chip-select" @onclick="@(()=> TopicVM.ToggleTopic(topic))">
+                    <MudChip T="string" Color="@(isSelected? Color.Primary: Color.Default)" Variant="@(isSelected? Variant.Filled : Variant.Outlined)" Icon="@(isSelected? Icons.Material.Filled.Check : null)">
+                        @topic.Label
+                    </MudChip>
+                </div>
+            }
+        </div>
+
+        @if(TopicVM.State == TopicState.Error)
+        {
+            <MudText Color="Color.Error" Class="mb-2">
+                @TopicVM.ErrorMessage
+            </MudText>
+        }
+
+        <MudButton FullWidth="true" Variant="Variant.Filled" Color="Color.Primary" Disabled="@(!TopicVM.HasEnoughTopics || TopicVM.State == TopicState.Loading)" OnClick="@OnSaveTopics" Style="padding:14px; border-radius:12px">
+            @if(TopicVM.State == TopicState.Loading)
+            {
+                <MudProgressCircular Size="Size.Small" Indeterminate="true" Color="Color.Inherit" />
+            }
+            else
+            {
+                <span>Save Topics</span>
+            }
+        </MudButton>
+    </MudPaper> 
+}
+
+@if (_showConfirmClear)
+{
+    <MudPaper Elevation="0" Outlined="true" Style="border-radius:12px;padding:24px;border-color:var(--mud-palette-error)" >
+        <MudText Typo="Typo.h6" Style="font-weight:700;margin-bottom:8px"> Clear local data?</MudText>
+        <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-4">This will reset the app to its initial state. Your bookmarks and topic preferences will be lost.</MudText>
+        <div style="display:flex;gap:12px">
+            <MudButton Variant="Variant.Outlined" FullWidth="true" OnClick="@(()=> _showConfirmClear = false)">Cancel</MudButton>
+            <MudButton Variant="Variant.Filled" Color="Color.Error" FullWidth="true" OnClick="@OnConfirmClear">Clear</MudButton>
+        </div>
+
+    </MudPaper>
+}
+
+@code {
+    private bool _showEditTopics = false;
+    private bool _showConfirmClear = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        SettingsVM.onChange += StateHasChanged;
+        TopicVM.onChange += StateHasChanged;
+        AppState.OnChange += StateHasChanged;
+        await SettingsVM.LoadSettingsAsync();
+    }
+
+    private async Task OnEditTopics()
+    {
+        _showEditTopics = true;
+        await TopicVM.FetchAvailableTopicsAsync();
+        await SettingsVM.LoadSettingsAsync();
+    }
+    private async Task OnSaveTopics()
+    {
+        var success = await TopicVM.SaveSelectedTopicsAsync();
+        if (success)
+        {
+            _showEditTopics = false;
+            await FeedVM.FetchFeedAsync(refresh: true);
+        }
+    }
+
+    private void OnClearData()
+    {
+        _showConfirmClear = true;
+    }
+
+    private async Task OnConfirmClear()
+    {
+        await SettingsVM.ClearLocalDataAsync();
+        _showConfirmClear = false;
+        Navigation.NavigateTo("/", forceLoad: true);
+    }
+
+    public void Dispose()
+    {
+        SettingsVM.onChange -= StateHasChanged;
+        TopicVM.onChange -= StateHasChanged;
+        AppState.OnChange -= StateHasChanged;
+    }
+}
