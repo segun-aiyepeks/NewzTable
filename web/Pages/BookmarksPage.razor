@@ -1,0 +1,84 @@
+﻿@page "/bookmarks"
+@inject BookmarkViewModel BookmarkVM
+@inject ArticleViewModel ArticleVM
+@inject NavigationManager Navigation
+
+<PageTitle> Saved Articles - NewzTable</PageTitle>
+
+<MudText Typo="Typo.h6" Style="font-weight:700; margin-bottom:16px">
+    Saved Articles
+</MudText>
+
+@if (BookmarkVM.State == BookmarkState.Loading)
+{
+    @for(int i = 0; i < 4; i++)
+    {
+        <ShimmerCard />
+    }
+}
+else if(BookmarkVM.State == BookmarkState.Error)
+{
+    <ErrorView Icon="@Icons.Material.Outlined.BookmarkRemove" Message="@BookmarkVM.ErrorMessage" OnRetry="@(()=> BookmarkVM.FetchBookmarksAsync())" />
+}
+else if (BookmarkVM.IsEmpty)
+{
+    <div class="state-container">
+        <div class="state-icon-circle" style="background-color:var(--mud-palette-primary-container)">
+            <MudIcon Icon="@Icons.Material.Outlined.BookmarkBorder" Style="color: var(--mud-palette-primary)" Size="Size.Large" />
+        </div>
+    </div>
+    <MudText Typo="Typo.h6" Align="Align.Center" Style="font-weight:700">
+        No saved articles yet
+    </MudText>
+    <MudText Typo="Typo.body2" Align="Align.Center" Color="Color.Secondary">
+        Tap the bookmark icon on any article to save it for later.
+    </MudText>
+    <MudButton Variant="Variant.Filled" Color="Color.Primary" Href="/" StartIcon="@Icons.Material.Outlined.Home">
+        Browse Articles
+    </MudButton>
+}
+else
+{
+    <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-3">
+        @BookmarkVM.Bookmarks.Count
+        @(BookmarkVM.Bookmarks.Count == 1 ? "article": "articles") saved
+    </MudText>
+    
+    @foreach(var bookmark in BookmarkVM.Bookmarks)
+    {
+        <div style="position:relative">
+            <ArticleCard Article="@bookmark.Article" IsBookmarked="true" OnArticleTap="@(()=> OnArticleTap(bookmark.Article))" OnBookmarkTap="@(()=> OnRemoveBookmark(bookmark.Article.Id))" />
+            <MudIconButton Icon="@Icons.Material.Outlined.Delete" Color="Color.Error" Size="Size.Small" Style="position:absolute; top:8px; right:8px; background:var(--mud-palette-surface); border-radius:50%; padding: 4px" OnClick="@(()=> OnRemoveBookmark(bookmark.Article.Id))" />
+        </div>
+    }
+}
+
+@code {
+    protected override void OnInitialized()
+    {
+        BookmarkVM.OnChange -= StateHasChanged;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if(firstRender && !BookmarkVM.Bookmarks.Any())
+        {
+            await BookmarkVM.FetchBookmarksAsync();
+        }
+    }
+
+    private void OnArticleTap(ArticleModel article){
+        ArticleVM.SetArticle(article, true);
+        Navigation.NavigateTo($"/article/{article.Id}");
+    }
+
+    private async Task OnRemoveBookmark(string articleId)
+    {
+        await BookmarkVM.RemoveBookmarkAsync(articleId);
+    }
+
+    public void Dispose()
+    {
+        BookmarkVM.OnChange -= StateHasChanged;
+    }
+}
