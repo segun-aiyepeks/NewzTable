@@ -1,0 +1,50 @@
+﻿@inject BookmarkViewModel BookmarkVM
+
+<MudCard Class="artile-card mb-2" Elevation="0" Outlined="true">
+    <MudCardContent Style="padding:12px">
+        <div style="display:flex; gap:12px; align-items:flex-start">
+            <div style="flex:1;min-width:0">
+                <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;flex-wrap:wrap">
+                    <MudText Class="article-source"> @Article.SourceName</MudText>
+                    <MudText Class="article-time">.</MudText>
+                    <MudText Class="article-time"> @GetTimeAgo(Article.PublishedAt)</MudText>
+                </div>
+                <MudText Typo="Typo.body1" Class="article-title mb-2"> @Article.Title</MudText>
+                <div style="display:flex;align-items:center;justify-content:space-between">
+                    <MudChip T="string" Size="Size.Small" Color="Color.Primary" Variant="Variant.Text" Class="topic-chip" Style="margin:0;padding:0 8px"> @Article.Topic.ToUpper()</MudChip>
+                    @if (OnBookmarkTap.HasDelegate)
+                    {
+                        <MudIconButton Icon="@(IsBookmarked? Icons.Material.Filled.Bookmark: Icons.Material.Outlined.BookmarkBorder)" Color="@(IsBookmarked? Color.Primary: Color.Default)" Size="Size.Small" OnClick="@OnBookmarkTap" />
+                    }
+                </div>
+            </div>
+
+            @if (!string.IsNullOrEmpty(Article.ImageUrl))
+            {
+                <img src="@Article.ImageUrl" alt="@Article.Title" class="article-image" onerror="this.style.display='none'" />
+            } else
+            {
+                <div class="article-image-placeholder">
+                    <MudIcon Icon="@Icons.Material.Outlined.Image" Color="Color.Secondary" />
+                </div>
+            }
+        </div>
+    </MudCardContent>
+</MudCard>
+
+@code {
+    [Parameter] public ArticleModel Article { get; set; } = new();
+    [Parameter] public bool IsBookmarked { get; set; }
+    [Parameter] public EventCallback OnArticleTap { get; set; }
+    [Parameter] public EventCallback OnBookmarkTap { get; set; }
+
+    private string GetTimeAgo(DateTime dateTime)
+    {
+        var span = DateTime.UtcNow - dateTime.ToUniversalTime();
+        if (span.TotalMinutes < 1) return "just now";
+        if (span.TotalMinutes < 60) return $"{(int)span.TotalMinutes}m ago";
+        if (span.TotalHours < 24) return $"{(int)span.TotalHours}h ago";
+        if (span.TotalDays < 7) return $"{(int)span.TotalDays}d ago";
+        return dateTime.ToString("MMM d, yyyy");
+    }
+}
