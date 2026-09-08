@@ -1,0 +1,14 @@
+﻿@code {
+    [Parameter] public string Message { get; set; } = string.Empty;
+    [Parameter] public EventCallback OnRetry { get; set; }
+    [Parameter] public string Icon { get; set; } = Icons.Material.Outlined.WifiOff;
+}
+
+<div class="state-container">
+    <div class="state-icon-circle" style="background-color:var(--mud-palette-error-container)">
+        <MudIcon Icon="@Icon" Style="color:var(--mud-palette-error)" Size="Size.Large" />
+    </div>
+    <MudText Typo="Typo.h6" Align="Align.Center" Style="font-weight:700"> Something went wrong</MudText>
+    <MudText Typo="Typo.body2" Align="Align.Center" Color="Color.Secondary" Style="max-width:300px"> @Message</MudText>
+    <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Outlined.Refresh" OnClick="@OnRetry"> Try Again </MudButton>
+</div>
