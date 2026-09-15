@@ -34,7 +34,7 @@ export function truncate(text, maxWords = 30){
 }
 
 // Generates a UUID v4.
-export function generateUIID(){
+export function generateUUID(){
     return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
         const r = (Math.random() * 16) | 0;
         const v = c === 'x' ? r : (r & 0x3) | 0x8;
