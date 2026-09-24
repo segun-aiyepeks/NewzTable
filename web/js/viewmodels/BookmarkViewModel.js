@@ -58,7 +58,7 @@ export class BookmarkViewModel {
 
         try {
             await removeBookmark(articleId);
-        } catch{
+        } catch{    
             this.#bookmarks = [...this.#bookmarks, removed];
             this.#notify();
         }
