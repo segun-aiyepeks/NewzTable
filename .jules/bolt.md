@@ -1,0 +1,3 @@
+## 2024-05-15 - MongoDB countDocuments in Infinite Scroll Feeds
+**Learning:** Using `Model.countDocuments()` to get the total number of items for pagination is incredibly expensive (O(N)), especially with `$or` and `regex` queries used in search, as it requires scanning all matching documents. In infinite scroll feeds where the exact total count is rarely displayed to the user (they only care about "has more items"), this is a massive performance bottleneck.
+**Action:** Replace `countDocuments` with a "limit + 1" pattern. By querying for one extra item (`limit: requested_limit + 1`), we can determine if there's a next page (`hasMore = items.length > requested_limit`) with an O(1) early exit from the database. Pop the extra item before returning.
