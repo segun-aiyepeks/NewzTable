@@ -39,7 +39,8 @@ class FeedViewModel extends ChangeNotifier {
         AppConstants.feedEndpoint,
         queryParameters: {
           'page': _currentPage,
-          'limit': AppConstants.feedPageSize
+          'limit': AppConstants.feedPageSize,
+          'skipTotal': 'true',
         },
       );
 
