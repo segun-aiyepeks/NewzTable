@@ -43,7 +43,8 @@ class SearchViewModel extends ChangeNotifier {
         queryParameters: {
           'q': trimmed,
           'page': _currentPage,
-          'limit': AppConstants.feedPageSize
+          'limit': AppConstants.feedPageSize,
+          'skipTotal': 'true',
         }
       );
 
@@ -74,7 +75,8 @@ class SearchViewModel extends ChangeNotifier {
         queryParameters: {
           'q': _lastQuery,
           'page': _currentPage,
-          'limit': AppConstants.feedPageSize
+          'limit': AppConstants.feedPageSize,
+          'skipTotal': 'true',
         }
       );
 

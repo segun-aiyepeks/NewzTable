@@ -35,20 +35,34 @@ async function getFeed(req, res, next) {
 
         const { page, limit, skip } = paginationParams(req)
 
-        const [articles, total] = await Promise.all([
-            Article.find({ topic: { $in: user.topics }})
-                .sort({ publishedAt: -1 })
-                .skip(skip)
-                .limit(limit)
-                .lean(),
-            Article.countDocuments({ topic: { $in: user.topics}}),
+        // Optimization: "limit + 1" pattern to avoid expensive countDocuments() by default
+        // We fetch one extra item to determine if there are more pages.
+        const queryLimit = limit + 1;
+        const skipTotal = req.query.skipTotal === 'true';
+
+        const fetchPromise = Article.find({ topic: { $in: user.topics }})
+            .sort({ publishedAt: -1 })
+            .skip(skip)
+            .limit(queryLimit)
+            .lean();
+
+        const [articlesResult, total] = await Promise.all([
+            fetchPromise,
+            skipTotal ? Promise.resolve(0) : Article.countDocuments({ topic: { $in: user.topics}})
         ]);
+
+        let articles = articlesResult;
+
+        const hasMore = articles.length > limit;
+        if (hasMore) {
+            articles.pop(); // Remove the extra item before returning
+        }
 
         res.json({
             page,
             limit,
             total,
-            hasMore: skip + articles.length < total,
+            hasMore,
             items: injectAdSlots(articles, page, limit),
         });
 
@@ -69,16 +83,29 @@ async function searchArticles(req, res, next) {
         const regex = new RegExp(q.trim(), 'i');
         const filter = { $or: [{ title: regex }, { description: regex }]};
 
-        const [articles, total] = await Promise.all([
-            Article.find(filter).sort({ publishedAt: -1 }).skip(skip).limit(limit).lean(),
-            Article.countDocuments(filter),
+        // Optimization: "limit + 1" pattern to avoid expensive countDocuments()
+        const queryLimit = limit + 1;
+        const skipTotal = req.query.skipTotal === 'true';
+
+        const fetchPromise = Article.find(filter).sort({ publishedAt: -1 }).skip(skip).limit(queryLimit).lean();
+
+        const [articlesResult, total] = await Promise.all([
+            fetchPromise,
+            skipTotal ? Promise.resolve(0) : Article.countDocuments(filter)
         ]);
+
+        let articles = articlesResult;
+
+        const hasMore = articles.length > limit;
+        if (hasMore) {
+            articles.pop();
+        }
 
         res.json({
             page,
             limit,
             total,
-            hasMore: skip + articles.length < total,
+            hasMore,
             items: articles
         });
     } catch(err) {

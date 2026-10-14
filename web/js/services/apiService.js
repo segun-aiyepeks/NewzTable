@@ -36,7 +36,7 @@ export async function getTopics() {
 
 // ------ Feed -----------------------------------------------
 export async function getFeed(page = 1, limit = 20) {
-    return request('GET', '/api/articles/feed?page=${page')
+    return request('GET', `/api/articles/feed?page=${page}&limit=${limit}&skipTotal=true`);
 }
 
 // ------ Article -----------------------------------------------
@@ -47,7 +47,7 @@ export async function getArticle(articleId) {
 // ------ Search -----------------------------------------------
 export async function searchArticles(query, page=1, limit=20) {
     const encoded = encodeURIComponent(query);
-    return request('GET', `/api/articles/search?q=${encoded}&page=${page}&limit=${limit}`);
+    return request('GET', `/api/articles/search?q=${encoded}&page=${page}&limit=${limit}&skipTotal=true`);
 }
 
 // ------ Bookmarks -----------------------------------------------
