@@ -35,21 +35,21 @@ async function getFeed(req, res, next) {
 
         const { page, limit, skip } = paginationParams(req)
 
-        const [articles, total] = await Promise.all([
-            Article.find({ topic: { $in: user.topics }})
-                .sort({ publishedAt: -1 })
-                .skip(skip)
-                .limit(limit)
-                .lean(),
-            Article.countDocuments({ topic: { $in: user.topics}}),
-        ]);
+        // ⚡ Bolt: Fetch limit + 1 to determine hasMore without expensive countDocuments query
+        const articles = await Article.find({ topic: { $in: user.topics }})
+            .sort({ publishedAt: -1 })
+            .skip(skip)
+            .limit(limit + 1)
+            .lean();
+
+        const hasMore = articles.length > limit;
+        const articlesToReturn = hasMore ? articles.slice(0, limit) : articles;
 
         res.json({
             page,
             limit,
-            total,
-            hasMore: skip + articles.length < total,
-            items: injectAdSlots(articles, page, limit),
+            hasMore,
+            items: injectAdSlots(articlesToReturn, page, limit),
         });
 
     } catch(err){
@@ -69,17 +69,21 @@ async function searchArticles(req, res, next) {
         const regex = new RegExp(q.trim(), 'i');
         const filter = { $or: [{ title: regex }, { description: regex }]};
 
-        const [articles, total] = await Promise.all([
-            Article.find(filter).sort({ publishedAt: -1 }).skip(skip).limit(limit).lean(),
-            Article.countDocuments(filter),
-        ]);
+        // ⚡ Bolt: Fetch limit + 1 to determine hasMore without expensive countDocuments query
+        const articles = await Article.find(filter)
+            .sort({ publishedAt: -1 })
+            .skip(skip)
+            .limit(limit + 1)
+            .lean();
+
+        const hasMore = articles.length > limit;
+        const articlesToReturn = hasMore ? articles.slice(0, limit) : articles;
 
         res.json({
             page,
             limit,
-            total,
-            hasMore: skip + articles.length < total,
-            items: articles
+            hasMore,
+            items: articlesToReturn
         });
     } catch(err) {
         next(err);
