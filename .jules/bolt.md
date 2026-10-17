@@ -1,0 +1,3 @@
+## 2023-10-17 - Avoid countDocuments for Infinite Scroll
+**Learning:** Using `countDocuments()` alongside `find().limit()` to calculate total counts for pagination is extremely slow and performs O(N) operations in MongoDB. Infinite scrolling on the frontend typically doesn't need to know the total document count and only requires knowing if there are more documents to fetch.
+**Action:** Replace `countDocuments()` with the `limit + 1` query pattern. Fetch `limit + 1` documents, if the number of returned documents is strictly greater than `limit`, then `hasMore` is true. Then pop the last document before returning the response. This saves an expensive DB query on every scroll.
