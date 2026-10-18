@@ -1,0 +1,3 @@
+## 2024-05-24 - Database Query Pagination Bottleneck
+**Learning:** Using `countDocuments()` along with `limit()` and `skip()` in MongoDB (such as via Mongoose) is an expensive operations scale, introducing N+1 style query bottlenecks on large tables. We can omit the O(N) database `count` requirement, and infer the presence of subsequent items by requesting `limit + 1` resources instead to compute boolean `hasMore` infinite scrolling flags locally.
+**Action:** Favor boolean inference (`hasMore`) via `limit + 1` requests to database collections over exact pagination details involving `total` properties on large tables whenever frontend functionality does not mandate the `total` number of available documents.
