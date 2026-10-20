@@ -35,20 +35,20 @@ async function getFeed(req, res, next) {
 
         const { page, limit, skip } = paginationParams(req)
 
-        const [articles, total] = await Promise.all([
-            Article.find({ topic: { $in: user.topics }})
-                .sort({ publishedAt: -1 })
-                .skip(skip)
-                .limit(limit)
-                .lean(),
-            Article.countDocuments({ topic: { $in: user.topics}}),
-        ]);
+        // ⚡ Bolt: Use limit + 1 pattern to avoid expensive countDocuments query
+        const articlesPlusOne = await Article.find({ topic: { $in: user.topics }})
+            .sort({ publishedAt: -1 })
+            .skip(skip)
+            .limit(limit + 1)
+            .lean();
+
+        const hasMore = articlesPlusOne.length > limit;
+        const articles = hasMore ? articlesPlusOne.slice(0, limit) : articlesPlusOne;
 
         res.json({
             page,
             limit,
-            total,
-            hasMore: skip + articles.length < total,
+            hasMore,
             items: injectAdSlots(articles, page, limit),
         });
 
@@ -69,16 +69,20 @@ async function searchArticles(req, res, next) {
         const regex = new RegExp(q.trim(), 'i');
         const filter = { $or: [{ title: regex }, { description: regex }]};
 
-        const [articles, total] = await Promise.all([
-            Article.find(filter).sort({ publishedAt: -1 }).skip(skip).limit(limit).lean(),
-            Article.countDocuments(filter),
-        ]);
+        // ⚡ Bolt: Use limit + 1 pattern to avoid expensive countDocuments query
+        const articlesPlusOne = await Article.find(filter)
+            .sort({ publishedAt: -1 })
+            .skip(skip)
+            .limit(limit + 1)
+            .lean();
+
+        const hasMore = articlesPlusOne.length > limit;
+        const articles = hasMore ? articlesPlusOne.slice(0, limit) : articlesPlusOne;
 
         res.json({
             page,
             limit,
-            total,
-            hasMore: skip + articles.length < total,
+            hasMore,
             items: articles
         });
     } catch(err) {
