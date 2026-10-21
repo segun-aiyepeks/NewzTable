@@ -1,0 +1,3 @@
+## 2025-02-28 - Replacing countDocuments with limit + 1 Pattern
+**Learning:** Using `countDocuments()` for infinite scrolling APIs introduces an unnecessary O(N) database bottleneck. The frontend mobile and web clients in NewzTable don't actually rely on the `total` document count for pagination, only on `hasMore`.
+**Action:** When creating infinite scrolling or feed endpoints, use the 'limit + 1' pattern. Query for one extra document (`limit + 1`). If the result length exceeds `limit`, set `hasMore = true` and slice the extra document before responding. This avoids an entire expensive database query.
