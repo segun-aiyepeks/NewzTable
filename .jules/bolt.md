@@ -1,0 +1,3 @@
+## 2026-10-22 - Replace countDocuments() with limit+1 for infinite scroll
+**Learning:** MongoDB `countDocuments()` is an O(N) operation which can become a major bottleneck on large collections. When frontends only need a `hasMore` flag for infinite scrolling and don't rely on `total` counts, we can fetch `limit + 1` documents instead of `limit` to determine if there are more items, entirely bypassing the count query.
+**Action:** When implementing pagination for infinite scroll interfaces, always use the `limit + 1` query pattern instead of `countDocuments()` unless the client strictly requires the exact total number of pages/items.

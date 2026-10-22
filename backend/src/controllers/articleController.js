@@ -35,20 +35,20 @@ async function getFeed(req, res, next) {
 
         const { page, limit, skip } = paginationParams(req)
 
-        const [articles, total] = await Promise.all([
-            Article.find({ topic: { $in: user.topics }})
-                .sort({ publishedAt: -1 })
-                .skip(skip)
-                .limit(limit)
-                .lean(),
-            Article.countDocuments({ topic: { $in: user.topics}}),
-        ]);
+        // Optimization: Fetch limit + 1 to check if there's a next page without counting all documents
+        const articlesFetched = await Article.find({ topic: { $in: user.topics }})
+            .sort({ publishedAt: -1 })
+            .skip(skip)
+            .limit(limit + 1)
+            .lean();
+
+        const hasMore = articlesFetched.length > limit;
+        const articles = hasMore ? articlesFetched.slice(0, limit) : articlesFetched;
 
         res.json({
             page,
             limit,
-            total,
-            hasMore: skip + articles.length < total,
+            hasMore,
             items: injectAdSlots(articles, page, limit),
         });
 
@@ -69,16 +69,20 @@ async function searchArticles(req, res, next) {
         const regex = new RegExp(q.trim(), 'i');
         const filter = { $or: [{ title: regex }, { description: regex }]};
 
-        const [articles, total] = await Promise.all([
-            Article.find(filter).sort({ publishedAt: -1 }).skip(skip).limit(limit).lean(),
-            Article.countDocuments(filter),
-        ]);
+        // Optimization: Fetch limit + 1 to check if there's a next page without counting all documents
+        const articlesFetched = await Article.find(filter)
+            .sort({ publishedAt: -1 })
+            .skip(skip)
+            .limit(limit + 1)
+            .lean();
+
+        const hasMore = articlesFetched.length > limit;
+        const articles = hasMore ? articlesFetched.slice(0, limit) : articlesFetched;
 
         res.json({
             page,
             limit,
-            total,
-            hasMore: skip + articles.length < total,
+            hasMore,
             items: articles
         });
     } catch(err) {
