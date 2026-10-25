@@ -35,20 +35,24 @@ async function getFeed(req, res, next) {
 
         const { page, limit, skip } = paginationParams(req)
 
-        const [articles, total] = await Promise.all([
-            Article.find({ topic: { $in: user.topics }})
-                .sort({ publishedAt: -1 })
-                .skip(skip)
-                .limit(limit)
-                .lean(),
-            Article.countDocuments({ topic: { $in: user.topics}}),
-        ]);
+        // ⚡ Bolt Performance Optimization:
+        // Use "limit + 1" pattern to determine if there are more items.
+        // This avoids expensive O(N) countDocuments() query on large collections.
+        const articles = await Article.find({ topic: { $in: user.topics }})
+            .sort({ publishedAt: -1 })
+            .skip(skip)
+            .limit(limit + 1)
+            .lean();
+
+        const hasMore = articles.length > limit;
+        if (hasMore) {
+            articles.pop(); // Remove the extra item used for the hasMore check
+        }
 
         res.json({
             page,
             limit,
-            total,
-            hasMore: skip + articles.length < total,
+            hasMore,
             items: injectAdSlots(articles, page, limit),
         });
 
@@ -69,16 +73,24 @@ async function searchArticles(req, res, next) {
         const regex = new RegExp(q.trim(), 'i');
         const filter = { $or: [{ title: regex }, { description: regex }]};
 
-        const [articles, total] = await Promise.all([
-            Article.find(filter).sort({ publishedAt: -1 }).skip(skip).limit(limit).lean(),
-            Article.countDocuments(filter),
-        ]);
+        // ⚡ Bolt Performance Optimization:
+        // Use "limit + 1" pattern to determine if there are more items.
+        // This avoids expensive O(N) countDocuments() query on large collections.
+        const articles = await Article.find(filter)
+            .sort({ publishedAt: -1 })
+            .skip(skip)
+            .limit(limit + 1)
+            .lean();
+
+        const hasMore = articles.length > limit;
+        if (hasMore) {
+            articles.pop(); // Remove the extra item used for the hasMore check
+        }
 
         res.json({
             page,
             limit,
-            total,
-            hasMore: skip + articles.length < total,
+            hasMore,
             items: articles
         });
     } catch(err) {
