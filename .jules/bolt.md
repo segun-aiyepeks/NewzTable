@@ -1,0 +1,3 @@
+## 2026-10-26 - Omit Expensive Count Documents For Infinite Scroll
+**Learning:** For infinite scroll feeds where the total document count isn't needed by the frontend, using a `countDocuments` query introduces an unnecessary O(N) database bottleneck, especially as the data set grows.
+**Action:** When implementing pagination that only requires a `hasMore` flag, query for `limit + 1` items instead. If `limit + 1` items are returned, we know there are more items (`hasMore: true`). Then simply `pop()` the extra item before returning the results to the client.
