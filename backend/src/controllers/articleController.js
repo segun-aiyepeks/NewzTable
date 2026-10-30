@@ -35,20 +35,23 @@ async function getFeed(req, res, next) {
 
         const { page, limit, skip } = paginationParams(req)
 
-        const [articles, total] = await Promise.all([
-            Article.find({ topic: { $in: user.topics }})
-                .sort({ publishedAt: -1 })
-                .skip(skip)
-                .limit(limit)
-                .lean(),
-            Article.countDocuments({ topic: { $in: user.topics}}),
-        ]);
+        // ⚡ Bolt: Use limit + 1 pattern to avoid expensive countDocuments query for infinite scroll
+        const articles = await Article.find({ topic: { $in: user.topics }})
+            .sort({ publishedAt: -1 })
+            .skip(skip)
+            .limit(limit + 1)
+            .lean();
+
+        const hasMore = articles.length > limit;
+        if (hasMore) {
+            articles.pop(); // Remove the extra item used for checking hasMore
+        }
 
         res.json({
             page,
             limit,
-            total,
-            hasMore: skip + articles.length < total,
+            total: 0, // Hardcoded to preserve API contract without expensive counting
+            hasMore,
             items: injectAdSlots(articles, page, limit),
         });
 
@@ -69,16 +72,23 @@ async function searchArticles(req, res, next) {
         const regex = new RegExp(q.trim(), 'i');
         const filter = { $or: [{ title: regex }, { description: regex }]};
 
-        const [articles, total] = await Promise.all([
-            Article.find(filter).sort({ publishedAt: -1 }).skip(skip).limit(limit).lean(),
-            Article.countDocuments(filter),
-        ]);
+        // ⚡ Bolt: Use limit + 1 pattern to avoid expensive countDocuments query for infinite scroll
+        const articles = await Article.find(filter)
+            .sort({ publishedAt: -1 })
+            .skip(skip)
+            .limit(limit + 1)
+            .lean();
+
+        const hasMore = articles.length > limit;
+        if (hasMore) {
+            articles.pop(); // Remove the extra item used for checking hasMore
+        }
 
         res.json({
             page,
             limit,
-            total,
-            hasMore: skip + articles.length < total,
+            total: 0, // Hardcoded to preserve API contract without expensive counting
+            hasMore,
             items: articles
         });
     } catch(err) {
