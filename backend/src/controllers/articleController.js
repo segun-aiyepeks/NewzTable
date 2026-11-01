@@ -35,21 +35,22 @@ async function getFeed(req, res, next) {
 
         const { page, limit, skip } = paginationParams(req)
 
-        const [articles, total] = await Promise.all([
-            Article.find({ topic: { $in: user.topics }})
-                .sort({ publishedAt: -1 })
-                .skip(skip)
-                .limit(limit)
-                .lean(),
-            Article.countDocuments({ topic: { $in: user.topics}}),
-        ]);
+        // Optimization: Fetch limit + 1 to determine hasMore without expensive countDocuments
+        const articles = await Article.find({ topic: { $in: user.topics }})
+            .sort({ publishedAt: -1 })
+            .skip(skip)
+            .limit(limit + 1)
+            .lean();
+
+        const hasMore = articles.length > limit;
+        const results = articles.slice(0, limit);
 
         res.json({
             page,
             limit,
-            total,
-            hasMore: skip + articles.length < total,
-            items: injectAdSlots(articles, page, limit),
+            total: 0, // Hardcoded to 0 to maintain API contract
+            hasMore,
+            items: injectAdSlots(results, page, limit),
         });
 
     } catch(err){
@@ -69,17 +70,22 @@ async function searchArticles(req, res, next) {
         const regex = new RegExp(q.trim(), 'i');
         const filter = { $or: [{ title: regex }, { description: regex }]};
 
-        const [articles, total] = await Promise.all([
-            Article.find(filter).sort({ publishedAt: -1 }).skip(skip).limit(limit).lean(),
-            Article.countDocuments(filter),
-        ]);
+        // Optimization: Fetch limit + 1 to determine hasMore without expensive countDocuments
+        const articles = await Article.find(filter)
+            .sort({ publishedAt: -1 })
+            .skip(skip)
+            .limit(limit + 1)
+            .lean();
+
+        const hasMore = articles.length > limit;
+        const results = articles.slice(0, limit);
 
         res.json({
             page,
             limit,
-            total,
-            hasMore: skip + articles.length < total,
-            items: articles
+            total: 0, // Hardcoded to 0 to maintain API contract
+            hasMore,
+            items: results
         });
     } catch(err) {
         next(err);
