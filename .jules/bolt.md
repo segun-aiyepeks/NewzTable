@@ -1,0 +1,3 @@
+## 2023-10-27 - Backend Pagination Optimization
+**Learning:** For infinite scrolling feeds or lists, calculating the exact total count using `countDocuments` is often an unnecessary and expensive O(N) database operation that scales poorly with table size.
+**Action:** When implementing pagination where clients only need to know if there's more data (e.g. for infinite scroll), use the "limit + 1" pattern. Fetch `limit + 1` records; if the length is greater than `limit`, there are more records (`hasMore = true`). Remove the extra record before sending the response. To maintain backward compatibility without the performance hit, return a hardcoded `total: 0`.
