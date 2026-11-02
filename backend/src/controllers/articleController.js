@@ -35,20 +35,23 @@ async function getFeed(req, res, next) {
 
         const { page, limit, skip } = paginationParams(req)
 
-        const [articles, total] = await Promise.all([
-            Article.find({ topic: { $in: user.topics }})
-                .sort({ publishedAt: -1 })
-                .skip(skip)
-                .limit(limit)
-                .lean(),
-            Article.countDocuments({ topic: { $in: user.topics}}),
-        ]);
+        // Optimization: Fetch limit + 1 to determine hasMore without expensive countDocuments
+        const articles = await Article.find({ topic: { $in: user.topics }})
+            .sort({ publishedAt: -1 })
+            .skip(skip)
+            .limit(limit + 1)
+            .lean();
+
+        const hasMore = articles.length > limit;
+        if (hasMore) {
+            articles.pop();
+        }
 
         res.json({
             page,
             limit,
-            total,
-            hasMore: skip + articles.length < total,
+            total: 0, // Hardcoded to avoid expensive count query but maintain API contract
+            hasMore,
             items: injectAdSlots(articles, page, limit),
         });
 
@@ -69,16 +72,23 @@ async function searchArticles(req, res, next) {
         const regex = new RegExp(q.trim(), 'i');
         const filter = { $or: [{ title: regex }, { description: regex }]};
 
-        const [articles, total] = await Promise.all([
-            Article.find(filter).sort({ publishedAt: -1 }).skip(skip).limit(limit).lean(),
-            Article.countDocuments(filter),
-        ]);
+        // Optimization: Fetch limit + 1 to determine hasMore without expensive countDocuments
+        const articles = await Article.find(filter)
+            .sort({ publishedAt: -1 })
+            .skip(skip)
+            .limit(limit + 1)
+            .lean();
+
+        const hasMore = articles.length > limit;
+        if (hasMore) {
+            articles.pop();
+        }
 
         res.json({
             page,
             limit,
-            total,
-            hasMore: skip + articles.length < total,
+            total: 0, // Hardcoded to avoid expensive count query but maintain API contract
+            hasMore,
             items: articles
         });
     } catch(err) {
