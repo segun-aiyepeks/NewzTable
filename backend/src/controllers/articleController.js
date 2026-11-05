@@ -27,7 +27,7 @@ function injectAdSlots(articles, page, limit) {
 
 async function getFeed(req, res, next) {
     try {
-        const user = await User.findOne({ deviceId: req.deviceId });
+        const user = await User.findOne({ deviceId: req.deviceId }, { topics: 1 }).lean();
 
         if(!user) {
             return res.status(404).json({ error: 'User not initialized - call POST /api/users/init first' });
