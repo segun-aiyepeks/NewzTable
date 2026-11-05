@@ -25,14 +25,14 @@ async function addBookmark(req, res, next) {
 
         if(!articleId) return res.status(400).json({ error: 'articleId is required' });
 
-        const article = await Article.findById(articleId);
-        if(!article) return res.status(404).json({ error: 'Article not found!' });
+        const articleExists = await Article.exists({ _id: articleId });
+        if(!articleExists) return res.status(404).json({ error: 'Article not found!' });
 
         const bookmark = await Bookmark.findOneAndUpdate(
             { deviceId: req.deviceId, article: articleId },
             { $setOnInsert: { deviceId: req.deviceId, article: articleId }},
             { upsert: true, new: true }
-        );
+        ).lean();
         res.status(201).json(bookmark);
     } catch(err) {
         next(err);
