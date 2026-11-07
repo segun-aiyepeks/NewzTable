@@ -34,14 +34,16 @@ async function initUser(req, res, next) {
 
 async function getCurrentUser(req, res, next) {
     try {
-        const user = await User.findOne({ deviceId: req.deviceId });
+        // Bolt: Optimized database interaction to use single findOneAndUpdate, reducing DB roundtrips from 2 to 1
+        const user = await User.findOneAndUpdate(
+            { deviceId: req.deviceId },
+            { $set: { lastSeenAt: new Date() } },
+            { new: true }
+        );
 
         if(!user) {
             return res.status(404).json({ error: 'User not initialized - call POST /api/user/int first'});
         }
-
-        user.lastSeenAt = new Date();
-        await user.save();
 
         res.json(user);
     } catch(err) {
