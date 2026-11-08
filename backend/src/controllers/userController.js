@@ -34,14 +34,17 @@ async function initUser(req, res, next) {
 
 async function getCurrentUser(req, res, next) {
     try {
-        const user = await User.findOne({ deviceId: req.deviceId });
+        // Optimize: Combine findOne and save into a single findOneAndUpdate call
+        // to reduce database roundtrips from two to one.
+        const user = await User.findOneAndUpdate(
+            { deviceId: req.deviceId },
+            { $set: { lastSeenAt: new Date() } },
+            { returnDocument: 'after' }
+        );
 
         if(!user) {
             return res.status(404).json({ error: 'User not initialized - call POST /api/user/int first'});
         }
-
-        user.lastSeenAt = new Date();
-        await user.save();
 
         res.json(user);
     } catch(err) {
