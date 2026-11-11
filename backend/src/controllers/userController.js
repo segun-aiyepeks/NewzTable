@@ -23,7 +23,8 @@ async function initUser(req, res, next) {
         const user = await User.findOneAndUpdate(
             { deviceId },
             { $set: { topics, lastSeenAt: new Date()}},
-            { upsert: true, new: true, setDefaultsOnInsert: true }
+            // ⚡ Bolt: Use returnDocument instead of new to avoid deprecation warnings
+            { upsert: true, returnDocument: 'after', setDefaultsOnInsert: true }
         );
 
         res.status(201).json(user);
@@ -34,14 +35,17 @@ async function initUser(req, res, next) {
 
 async function getCurrentUser(req, res, next) {
     try {
-        const user = await User.findOne({ deviceId: req.deviceId });
+        // ⚡ Bolt: Replaced findOne() + save() with findOneAndUpdate()
+        // Impact: Halves database roundtrips for this endpoint
+        const user = await User.findOneAndUpdate(
+            { deviceId: req.deviceId },
+            { $set: { lastSeenAt: new Date() } },
+            { returnDocument: 'after' }
+        );
 
         if(!user) {
             return res.status(404).json({ error: 'User not initialized - call POST /api/user/int first'});
         }
-
-        user.lastSeenAt = new Date();
-        await user.save();
 
         res.json(user);
     } catch(err) {
@@ -74,7 +78,8 @@ async function updatePreferences(req, res, next) {
         const user = await User.findOneAndUpdate(
             { deviceId: req.deviceId },
             { $set: update },
-            { new: true }
+            // ⚡ Bolt: Use returnDocument instead of new to avoid deprecation warnings
+            { returnDocument: 'after' }
         );
 
         if (!user) return res.status(404).json({ error: 'User not found' });
