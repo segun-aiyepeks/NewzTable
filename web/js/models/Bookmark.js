@@ -1,5 +1,5 @@
 import { Article } from './Article.js';
-import { timeAgo } from '../utils/helpers';
+import { timeAgo } from '../utils/helpers.js';
 
 export class Bookmark {
     constructor(data) {

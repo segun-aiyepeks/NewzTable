@@ -1,5 +1,5 @@
-import { getBookmarks, addBookmark, removeBookmark } from '../services/apiService';
-import { Bookmark } from '../models/Bookmark';
+import { getBookmarks, addBookmark, removeBookmark } from '../services/apiService.js';
+import { Bookmark } from '../models/Bookmark.js';
 
 export class BookmarkViewModel {
     #bookmarks = [];

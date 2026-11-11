@@ -13,39 +13,44 @@ class BookmarksScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
 
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          'Saved Articles',
-          style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
+          'Saved Stories',
+          style: theme.textTheme.headlineSmall?.copyWith(
+            fontWeight: FontWeight.w800,
+            fontSize: 22,
+          ),
         ),
       ),
       body: Consumer<BookmarkViewModel>(
-        builder:  (context, viewModel, _) {
-          if(viewModel.state == BookmarkState.loading){
-            ShimmerList(itemCount: 4);
+        builder: (context, viewModel, _) {
+          if (viewModel.state == BookmarkState.loading && viewModel.bookmarks.isEmpty) {
+            return const ShimmerList(itemCount: 4);
           }
 
-          if(viewModel.state == BookmarkState.error) {
+          if (viewModel.state == BookmarkState.error && viewModel.bookmarks.isEmpty) {
             return ErrorView(
-              message: viewModel.errorMessage, 
-              onRetry: viewModel.fetchBookmarks
+              message: viewModel.errorMessage,
+              onRetry: viewModel.fetchBookmarks,
             );
           }
 
-          if(viewModel.isEmpty) {
-            return EmptyView(
+          if (viewModel.isEmpty) {
+            return const EmptyView(
               icon: Icons.bookmark_border_rounded,
-              title: 'No saved articles yet', 
-              message: 'Tap the bookmark icon on any article to save it for later.'
+              title: 'No saved stories yet',
+              message: 'Tap the bookmark icon on any article to save it for reading later.',
             );
           }
 
           return RefreshIndicator(
-            onRefresh: () => viewModel.fetchBookmarks(), 
+            onRefresh: () => viewModel.fetchBookmarks(),
             child: ListView.builder(
-              physics: AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              physics: const AlwaysScrollableScrollPhysics(),
               itemCount: viewModel.bookmarks.length,
               itemBuilder: (context, index) {
                 final bookmark = viewModel.bookmarks[index];
@@ -53,36 +58,46 @@ class BookmarksScreen extends StatelessWidget {
                   key: Key(bookmark.bookmarkId),
                   direction: DismissDirection.endToStart,
                   background: Container(
-                    margin: EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                    margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
                     decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.error,
-                      borderRadius: BorderRadius.circular(12)
+                      color: Colors.redAccent.shade700,
+                      borderRadius: BorderRadius.circular(16),
                     ),
                     alignment: Alignment.centerRight,
-                    padding: EdgeInsets.only(right: 20),
-                    child: Icon(Icons.delete_outline_rounded, color: Colors.white,),
+                    padding: const EdgeInsets.only(right: 20),
+                    child: const Icon(Icons.delete_outline_rounded, color: Colors.white, size: 26),
                   ),
                   onDismissed: (_) {
                     viewModel.removeBookmarks(bookmark.article.id);
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
-                        content: Text('Article removed from saved.'),
-                        action: SnackBarAction(label: 'Undo', onPressed: () => viewModel.fetchBookmarks()),
-                      )
+                        content: const Text('Article removed from saved.'),
+                        action: SnackBarAction(
+                          label: 'Undo',
+                          onPressed: () => viewModel.addBookmark(bookmark.article),
+                        ),
+                      ),
                     );
-                  }, 
+                  },
                   child: ArticleCard(
                     article: bookmark.article,
-                    isBookmarked: true, 
+                    isBookmarked: true,
                     onTap: () {
-                      Navigator.push(context, MaterialPageRoute(builder: (_) => ArticleScreen(article: bookmark.article, isBookmarked: true,)));
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => ArticleScreen(
+                            article: bookmark.article,
+                            isBookmarked: true,
+                          ),
+                        ),
+                      );
                     },
                     onBookMarkTap: () => viewModel.removeBookmarks(bookmark.article.id),
-                  )
+                  ),
                 );
               },
-            
-            )
+            ),
           );
         },
       ),

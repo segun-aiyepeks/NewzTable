@@ -2,6 +2,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:newztable/model/article_model.dart';
 import 'package:newztable/view/widgets/article_card.dart';
+import 'package:newztable/view/widgets/publisher_badge.dart';
 import 'package:newztable/view/widgets/shimmer_card.dart';
 import 'package:newztable/viewmodel/article_view_model.dart';
 import 'package:newztable/viewmodel/bookmark_view_model.dart';
@@ -13,7 +14,11 @@ class ArticleScreen extends StatefulWidget {
   final ArticleModel article;
   final bool isBookmarked;
 
-  const ArticleScreen({super.key, required this.article, required this.isBookmarked});
+  const ArticleScreen({
+    super.key,
+    required this.article,
+    required this.isBookmarked,
+  });
 
   @override
   State<ArticleScreen> createState() => _ArticleScreenState();
@@ -32,158 +37,255 @@ class _ArticleScreenState extends State<ArticleScreen> {
 
   Future<void> _launchUrl() async {
     final uri = Uri.parse(widget.article.url);
-    if(await canLaunchUrl(uri)) {
+    if (await canLaunchUrl(uri)) {
       await launchUrl(uri, mode: LaunchMode.externalApplication);
-    }
-  }
-
-  Future<void> _toggleBookmark() async {
-    final articleViewModel = context.read<ArticleViewModel>();
-    final bookmarkViewModel = context.read<BookmarkViewModel>();
-
-    await articleViewModel.toggleBookmark(widget.article.id);
-
-    if(articleViewModel.isBookmarked) {
-      bookmarkViewModel.fetchBookmarks();
-    } else {
-      bookmarkViewModel.removeBookmarks(widget.article.id);
     }
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
 
     return Scaffold(
-      body: Consumer<ArticleViewModel>(
-        builder: (context, articleViewModel, _) {
+      body: Consumer2<ArticleViewModel, BookmarkViewModel>(
+        builder: (context, articleViewModel, bookmarkViewModel, _) {
+          final isCurrentlyBookmarked = bookmarkViewModel.isBookmarked(widget.article.id);
+
           return CustomScrollView(
             slivers: [
+              // 1. Sleek Sliver AppBar with Hero Image
               SliverAppBar(
-                expandedHeight: widget.article.imageUrl != null? 250: 0,
+                expandedHeight: widget.article.imageUrl != null ? 280 : 0,
                 pinned: true,
+                leading: IconButton(
+                  icon: Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: isDark ? const Color(0xFF1F222A).withAlpha(200) : Colors.white.withAlpha(200),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(Icons.arrow_back_ios_new_rounded, size: 16),
+                  ),
+                  onPressed: () => Navigator.pop(context),
+                ),
                 actions: [
                   IconButton(
-                    icon: Icon(
-                      articleViewModel.isBookmarked? Icons.bookmark_rounded: Icons.bookmark_border_rounded,
-                      color: articleViewModel.isBookmarked? colorScheme.primary : null,
-                    ),
-                    onPressed: _toggleBookmark, 
-                  )
-                ],
-                flexibleSpace: widget.article.imageUrl != null?
-                  FlexibleSpaceBar(
-                    background: CachedNetworkImage(
-                      imageUrl: widget.article.imageUrl!,
-                      fit: BoxFit.cover,
-                      placeholder: (context, url) => Container(
-                        color: colorScheme.surfaceContainerHighest,
+                    icon: Container(
+                      padding: const EdgeInsets.all(6),
+                      decoration: BoxDecoration(
+                        color: isDark ? const Color(0xFF1F222A).withAlpha(200) : Colors.white.withAlpha(200),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        isCurrentlyBookmarked ? Icons.bookmark_rounded : Icons.bookmark_border_rounded,
+                        color: isCurrentlyBookmarked ? const Color(0xFF1877F2) : null,
+                        size: 18,
                       ),
                     ),
-                  ): null
+                    onPressed: () => bookmarkViewModel.toggleBookmark(widget.article),
+                  ),
+                  const SizedBox(width: 8),
+                ],
+                flexibleSpace: widget.article.imageUrl != null
+                    ? FlexibleSpaceBar(
+                        background: Stack(
+                          fit: StackFit.expand,
+                          children: [
+                            CachedNetworkImage(
+                              imageUrl: widget.article.imageUrl!,
+                              fit: BoxFit.cover,
+                              placeholder: (context, url) => Container(
+                                color: isDark ? const Color(0xFF1F222A) : const Color(0xFFEEF0F4),
+                              ),
+                              errorWidget: (context, url, error) => Container(
+                                color: isDark ? const Color(0xFF1F222A) : const Color(0xFFEEF0F4),
+                                child: const Icon(Icons.newspaper_rounded, color: Colors.grey, size: 40),
+                              ),
+                            ),
+                            // Gradient overlay for smooth contrast
+                            DecoratedBox(
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  begin: Alignment.topCenter,
+                                  end: Alignment.bottomCenter,
+                                  colors: [
+                                    Colors.black.withAlpha(120),
+                                    Colors.transparent,
+                                    isDark ? const Color(0xFF18191A) : Colors.white.withAlpha(180),
+                                  ],
+                                  stops: const [0.0, 0.5, 1.0],
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      )
+                    : null,
               ),
+
+              // 2. Article Body Content
               SliverToBoxAdapter(
                 child: Padding(
-                  padding: EdgeInsets.all(20),
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Row(
-                        children: [
-                          Container(
-                            padding: EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                            decoration: BoxDecoration(
-                              color: colorScheme.primaryContainer,
-                              borderRadius: BorderRadius.circular(20)
-                            ),
-                            child: Text(
-                              widget.article.topic.toUpperCase(),
-                              style: theme.textTheme.labelSmall?.copyWith(color: colorScheme.onPrimaryContainer, fontWeight: FontWeight.w700),
-                            ),
+                      // Category Tag
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF1877F2).withAlpha(30),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Text(
+                          widget.article.topic.toUpperCase(),
+                          style: const TextStyle(
+                            color: Color(0xFF1877F2),
+                            fontWeight: FontWeight.w700,
+                            fontSize: 11,
+                            letterSpacing: 0.6,
                           ),
-                          SizedBox(width: 8),
-                          Text(
-                            widget.article.sourceName,
-                            style: theme.textTheme.labelMedium?.copyWith(color: colorScheme.primary, fontWeight: FontWeight.w600),
-                          ),
-                          Spacer(),
-                          Text(
-                            timeago.format(widget.article.publishedAt),
-                            style: theme.textTheme.labelSmall?.copyWith(color: colorScheme.outline),
-                          )
-                        ],
+                        ),
                       ),
-                      SizedBox(height: 16),
+
+                      const SizedBox(height: 12),
+
+                      // Article Title
                       Text(
                         widget.article.title,
                         style: theme.textTheme.headlineSmall?.copyWith(
                           fontWeight: FontWeight.w800,
-                          height: 1.3
-                        )
+                          fontSize: 22,
+                          height: 1.3,
+                        ),
                       ),
-                      SizedBox(height: 12),
-                      if (widget.article.description.isNotEmpty) ...[
-                        Text(
-                          widget.article.description,
-                          style: theme.textTheme.bodyLarge?.copyWith(color: colorScheme.onSurfaceVariant, height: 1.6),
+
+                      const SizedBox(height: 16),
+
+                      // Publisher details & Publish Date
+                      Row(
+                        children: [
+                          PublisherBadge(sourceName: widget.article.sourceName, size: 36),
+                          const SizedBox(width: 12),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                widget.article.sourceName,
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w800,
+                                  fontSize: 14,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                timeago.format(widget.article.publishedAt),
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: isDark ? const Color(0xFF8E93A0) : const Color(0xFF6B7280),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const Spacer(),
+                          // External link button
+                          IconButton(
+                            icon: const Icon(Icons.open_in_new_rounded, size: 20),
+                            onPressed: _launchUrl,
+                          ),
+                        ],
+                      ),
+
+                      const SizedBox(height: 20),
+                      Divider(color: isDark ? const Color(0xFF2E333D) : const Color(0xFFE2E4E9)),
+                      const SizedBox(height: 16),
+
+                      // Article Content
+                      Text(
+                        widget.article.content.isNotEmpty
+                            ? widget.article.content
+                            : widget.article.description,
+                        style: theme.textTheme.bodyLarge?.copyWith(
+                          fontSize: 16,
+                          height: 1.7,
+                          color: isDark ? const Color(0xFFD6D9E0) : const Color(0xFF2C323F),
                         ),
-                        SizedBox(height: 16)
-                      ],
-                      if(widget.article.content.isNotEmpty) ...[
-                        Text(
-                          widget.article.content,
-                          style: theme.textTheme.bodyMedium?.copyWith(height: 1.7),
-                          maxLines: 10,
-                          overflow: TextOverflow.ellipsis
-                        ),
-                        SizedBox(height: 24)
-                      ],
+                      ),
+
+                      const SizedBox(height: 24),
+
+                      // Read Full Story CTA Button
                       SizedBox(
                         width: double.infinity,
-                        child: FilledButton.icon(
+                        height: 52,
+                        child: ElevatedButton.icon(
                           onPressed: _launchUrl,
-                          icon: Icon(Icons.open_in_new_rounded), 
-                          label: Text('Continue reading on ${widget.article.sourceName}'),
-                          style: FilledButton.styleFrom(
-                            padding: EdgeInsets.symmetric(vertical: 14),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF1877F2),
+                            foregroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                            elevation: 0,
+                          ),
+                          icon: const Icon(Icons.public_rounded, size: 20),
+                          label: const Text(
+                            'Read Full Story on Website',
+                            style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
                           ),
                         ),
                       ),
-                      SizedBox(height: 32),
-                      if(articleViewModel.state == ArticleState.loading)
-                        const ShimmerList(itemCount: 3),
-                      if(articleViewModel.state == ArticleState.error)
-                        Padding(
-                          padding: EdgeInsets.symmetric(vertical: 8),
-                          child: Text(
-                            'Could not load related articles',
-                            style: TextStyle(
-                              color: Theme.of(context).colorScheme.outline,
-                              fontSize: 13
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
+
+                      const SizedBox(height: 36),
+
+                      // Related News Section
+                      Text(
+                        'Related News',
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w800,
+                          fontSize: 18,
                         ),
-                      if(articleViewModel.state == ArticleState.success && articleViewModel.relatedArticles.isNotEmpty) ...[
-                        Text(
-                          'More from ${widget.article.topic}',
-                          style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
-                        ),
-                        SizedBox(height: 12),
-                        ...articleViewModel.relatedArticles
-                          .map((related) => ArticleCard(
-                            article: related, 
-                            onTap: () {
-                              Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => ArticleScreen(article: related, isBookmarked: false)));
-                            }
-                          ))
-                      ]
+                      ),
+                      const SizedBox(height: 12),
                     ],
                   ),
                 ),
-              )
+              ),
+
+              // Related Articles List
+              if (articleViewModel.state == ArticleState.loading &&
+                  articleViewModel.relatedArticles.isEmpty)
+                const SliverToBoxAdapter(child: ShimmerList(itemCount: 2))
+              else
+                SliverList(
+                  delegate: SliverChildBuilderDelegate(
+                    (context, index) {
+                      final rel = articleViewModel.relatedArticles[index];
+                      final isRelBookmarked = bookmarkViewModel.isBookmarked(rel.id);
+
+                      return ArticleCard(
+                        article: rel,
+                        isBookmarked: isRelBookmarked,
+                        onTap: () {
+                          Navigator.pushReplacement(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => ArticleScreen(
+                                article: rel,
+                                isBookmarked: isRelBookmarked,
+                              ),
+                            ),
+                          );
+                        },
+                        onBookMarkTap: () => bookmarkViewModel.toggleBookmark(rel),
+                      );
+                    },
+                    childCount: articleViewModel.relatedArticles.length,
+                  ),
+                ),
+
+              const SliverToBoxAdapter(child: SizedBox(height: 32)),
             ],
           );
         },

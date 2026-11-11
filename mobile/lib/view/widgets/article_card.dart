@@ -1,7 +1,8 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart';
 import 'package:newztable/model/article_model.dart';
+import 'package:newztable/view/widgets/publisher_badge.dart';
+import 'package:timeago/timeago.dart' as timeago;
 
 class ArticleCard extends StatelessWidget {
   final ArticleModel article;
@@ -14,112 +15,165 @@ class ArticleCard extends StatelessWidget {
     required this.article,
     required this.onTap,
     this.onBookMarkTap,
-    this.isBookmarked = false
+    this.isBookmarked = false,
   });
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
 
-    return Card(
-      margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: Padding(
-          padding: EdgeInsets.all(12),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF1F222A) : Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: isDark ? const Color(0xFF2E333D) : const Color(0xFFE2E4E9),
+          width: 0.8,
+        ),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(16),
+          child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // 1. Left Thumbnail
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: SizedBox(
+                    width: 96,
+                    height: 96,
+                    child: article.imageUrl != null && article.imageUrl!.isNotEmpty
+                        ? CachedNetworkImage(
+                            imageUrl: article.imageUrl!,
+                            fit: BoxFit.cover,
+                            placeholder: (context, url) => Container(
+                              color: isDark ? const Color(0xFF2A2E39) : const Color(0xFFEEF0F4),
+                              child: const Center(
+                                child: SizedBox(
+                                  width: 18,
+                                  height: 18,
+                                  child: CircularProgressIndicator(strokeWidth: 2),
+                                ),
+                              ),
+                            ),
+                            errorWidget: (context, url, error) => Container(
+                              color: isDark ? const Color(0xFF2A2E39) : const Color(0xFFEEF0F4),
+                              child: const Icon(Icons.newspaper_rounded, color: Colors.grey, size: 28),
+                            ),
+                          )
+                        : Container(
+                            color: isDark ? const Color(0xFF2A2E39) : const Color(0xFFEEF0F4),
+                            child: const Icon(Icons.newspaper_rounded, color: Colors.grey, size: 28),
+                          ),
+                  ),
+                ),
+
+                const SizedBox(width: 12),
+
+                // 2. Right Article Details
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
+                      // Category
                       Text(
-                        article.sourceName,
-                        style: theme.textTheme.labelSmall?.copyWith(
-                          color: colorScheme.primary,
-                          fontWeight: FontWeight.w600
+                        article.topic.toUpperCase(),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: 0.5,
+                          color: isDark ? const Color(0xFF9EA3AE) : const Color(0xFF6B7280),
                         ),
                       ),
-                      SizedBox(width: 8.0,),
+
+                      const SizedBox(height: 4),
+
+                      // Title
                       Text(
-                        '.',
-                        style: theme.textTheme.labelSmall?.copyWith(color: colorScheme.outline),
-                      )
+                        article.title,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 14,
+                          height: 1.3,
+                        ),
+                      ),
+
+                      const SizedBox(height: 8),
+
+                      // Meta row
+                      Row(
+                        children: [
+                          PublisherBadge(sourceName: article.sourceName, size: 16),
+                          const SizedBox(width: 6),
+                          Flexible(
+                            child: Text(
+                              article.sourceName,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w700,
+                                color: isDark ? Colors.white : const Color(0xFF1A1D20),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 5),
+                          Text(
+                            '•',
+                            style: TextStyle(
+                              color: isDark ? const Color(0xFF6C757D) : const Color(0xFF9CA3AF),
+                              fontSize: 11,
+                            ),
+                          ),
+                          const SizedBox(width: 5),
+                          Text(
+                            timeago.format(article.publishedAt, locale: 'en_short'),
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: isDark ? const Color(0xFF8E93A0) : const Color(0xFF6B7280),
+                            ),
+                          ),
+                          const Spacer(),
+                          if (onBookMarkTap != null)
+                            GestureDetector(
+                              onTap: onBookMarkTap,
+                              behavior: HitTestBehavior.opaque,
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 4),
+                                child: Icon(
+                                  isBookmarked ? Icons.bookmark_rounded : Icons.bookmark_border_rounded,
+                                  size: 18,
+                                  color: isBookmarked
+                                      ? const Color(0xFF1877F2)
+                                      : (isDark ? const Color(0xFF8E93A0) : const Color(0xFF9CA3AF)),
+                                ),
+                              ),
+                            )
+                          else
+                            Icon(
+                              Icons.more_horiz_rounded,
+                              size: 18,
+                              color: isDark ? const Color(0xFF8E93A0) : const Color(0xFF9CA3AF),
+                            ),
+                        ],
+                      ),
                     ],
                   ),
-                  SizedBox(height: 6.0,),
-                  Text(
-                    article.title,
-                    style: theme.textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.w700,
-                      height: 1.3
-                    ),
-                    maxLines: 3,
-                    overflow: TextOverflow.ellipsis
-                  ),
-                  SizedBox(height: 8.0),
-                  Row(
-                    children: [
-                      Container(
-                        padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: colorScheme.primaryContainer,
-                          borderRadius: BorderRadius.circular(20)
-                        ),
-                        child: Text(
-                          article.topic.toUpperCase(),
-                          style: theme.textTheme.labelSmall?.copyWith(
-                            color: colorScheme.onPrimaryContainer,
-                            fontWeight: FontWeight.w600,
-                            fontSize: 10
-                          ),
-                        ),
-                      ),
-                      Spacer(),
-                      if(onBookMarkTap != null)
-                        GestureDetector(
-                          onTap: onBookMarkTap,
-                          child: Icon(
-                            isBookmarked? Icons.bookmark : Icons.bookmark_border,
-                            size: 20,
-                            color: isBookmarked? colorScheme.primary : colorScheme.outline,
-                          ),
-                        )
-                    ]
-                  )
-                ]
-              )),
-              if(article.imageUrl != null) ...[
-                SizedBox(width: 12.0),
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(8),
-                  child: CachedNetworkImage(
-                    imageUrl: article.imageUrl!,
-                    width: 90,
-                    height: 90,
-                    fit: BoxFit.cover,
-                    placeholder: (context, url) => Container(
-                      width: 90,
-                      height: 90,
-                      color: colorScheme.surfaceContainerHighest,
-                    ),
-                    errorWidget: (context, url, error) => Container(
-                      width: 90,
-                      height: 90,
-                      color: colorScheme.surfaceContainerHighest,
-                      child: Icon(
-                        Icons.image_not_supported_outlined,
-                        color: colorScheme.outline,
-                      ),
-                    ),
-                  ),
-                )
-              ]
-            ],
+                ),
+              ],
+            ),
           ),
         ),
       ),

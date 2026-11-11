@@ -1,4 +1,4 @@
-import { generateUUID } from '../utils/helpers';
+import { generateUUID } from '../utils/helpers.js';
 
 const KEYS = {
     DEVICE_ID: 'device_id',

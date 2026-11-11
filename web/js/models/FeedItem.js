@@ -1,4 +1,4 @@
-import { Article } from './Article';
+import { Article } from './Article.js';
 
 export const FeedItemType = Object.freeze({
     ARTICLE: 'article',

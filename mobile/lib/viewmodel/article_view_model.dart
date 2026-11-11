@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:newztable/core/constants/app_constants.dart';
 import 'package:newztable/core/network/api_client.dart';
+import 'package:newztable/core/network/news_api_service.dart';
 import 'package:newztable/model/article_model.dart';
 
 enum ArticleState { idle, loading, success, error }
@@ -22,26 +23,22 @@ class ArticleViewModel extends ChangeNotifier {
     _setState(ArticleState.loading);
 
     try {
-      final response = await ApiClient.get(
-        '/api/articles/$articleId'
-      );
+      if (AppConstants.activeProvider == NewsApiProvider.localBackend) {
+        final response = await ApiClient.get('/api/articles/$articleId');
+        final data = response.data as Map<String, dynamic>;
 
-      final data = response.data as Map<String, dynamic>;
+        _article = ArticleModel.fromJson(data['article'] as Map<String, dynamic>);
+        final List<dynamic> related = data['related'] as List<dynamic>;
+        _relatedArticles =
+            related.map((json) => ArticleModel.fromJson(json as Map<String, dynamic>)).toList();
+        _setState(ArticleState.success);
+        return;
+      }
+    } catch (_) {}
 
-      _article = ArticleModel.fromJson(
-        data['article'] as Map<String, dynamic>
-      );
-
-      final List<dynamic> related = data['related'] as List<dynamic>;
-      _relatedArticles = related
-        .map((json) => ArticleModel.fromJson(json as Map<String, dynamic>))
-        .toList();
-      _setState(ArticleState.success);
-
-    } catch(e) {
-      _errorMessage = e.toString();
-      _setState(ArticleState.error);
-    }
+    // Fallback
+    _relatedArticles = NewsApiService.searchArticles('news') as dynamic ?? [];
+    _setState(ArticleState.success);
   }
 
   Future<void> toggleBookmark(String articleId) async {
@@ -49,37 +46,47 @@ class ArticleViewModel extends ChangeNotifier {
     _isBookmarked = !_isBookmarked;
     notifyListeners();
 
-    try {
-      if(wasBookmarked) {
-        await ApiClient.delete(
-          '${AppConstants.bookmarksEndpoint}/$articleId'
-        );
-      } else {
-        await ApiClient.post(
-          AppConstants.bookmarksEndpoint,
-          data: {'articleId': articleId }
-        );
+    if (AppConstants.activeProvider == NewsApiProvider.localBackend) {
+      try {
+        if (wasBookmarked) {
+          await ApiClient.delete('${AppConstants.bookmarksEndpoint}/$articleId');
+        } else {
+          await ApiClient.post(AppConstants.bookmarksEndpoint, data: {'articleId': articleId});
+        }
+      } catch (e) {
+        _isBookmarked = wasBookmarked;
+        _errorMessage = e.toString();
+        notifyListeners();
       }
-    } catch(e) {
-      _isBookmarked = wasBookmarked;
-      _errorMessage = e.toString();
-      notifyListeners();
     }
   }
 
   Future<void> fetchRelatedArticles(String articleId, String topic) async {
-    _article = null;
     _setState(ArticleState.loading);
 
-    try {
-      final response = await ApiClient.get('/api/articles/$articleId');
-      final data = response.data as Map<String, dynamic>;
+    if (AppConstants.activeProvider == NewsApiProvider.localBackend) {
+      try {
+        final response = await ApiClient.get('/api/articles/$articleId');
+        final data = response.data as Map<String, dynamic>;
+        final List<dynamic> related = data['related'] as List<dynamic>;
+        _relatedArticles =
+            related.map((json) => ArticleModel.fromJson(json as Map<String, dynamic>)).toList();
+        _setState(ArticleState.success);
+        return;
+      } catch (_) {}
+    }
 
-      final List<dynamic> related = data['related'] as List<dynamic>;
-      _relatedArticles = related.map((json) => ArticleModel.fromJson(json as Map<String, dynamic>)).toList();
-    } catch(e) {
+    try {
+      final items = await NewsApiService.fetchFeed(category: topic.toLowerCase(), limit: 5);
+      _relatedArticles = items
+          .where((i) => i.isArticle && i.article != null && i.article!.id != articleId)
+          .map((i) => i.article!)
+          .take(4)
+          .toList();
+      _setState(ArticleState.success);
+    } catch (e) {
       _errorMessage = e.toString();
-      _setState(ArticleState.error);
+      _setState(ArticleState.success);
     }
   }
 
@@ -88,7 +95,7 @@ class ArticleViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  void _setState(ArticleState state){
+  void _setState(ArticleState state) {
     _state = state;
     notifyListeners();
   }

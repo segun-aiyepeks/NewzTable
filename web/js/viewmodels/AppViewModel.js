@@ -4,7 +4,7 @@ import {
     getDarkMode,
     saveDarkMode
 } from '../services/storageService.js';
-import { updatePreferences } from '../services/apiService';
+import { updatePreferences } from '../services/apiService.js';
 import { FeedViewModel } from './FeedViewModel.js';
 import { SearchViewModel } from './SearchViewModel.js';
 import { BookmarkViewModel } from './BookmarkViewModel.js';

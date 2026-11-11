@@ -1,6 +1,6 @@
-import { getDeviceId } from './storageService';
+import { getDeviceId } from './storageService.js';
 
-const BASE_URL = 'http://localhost:5000'
+const BASE_URL = 'http://localhost:3000'
 
 async function request(method, endpoint, body = null) {
     const headers = {

@@ -58,7 +58,7 @@ class _OnboardingscreenState extends State<Onboardingscreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Padding(
-                  padding: EdgeInsetsGeometry.fromLTRB(24, 32, 24, 0),
+                  padding: const EdgeInsets.fromLTRB(24, 32, 24, 0),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [

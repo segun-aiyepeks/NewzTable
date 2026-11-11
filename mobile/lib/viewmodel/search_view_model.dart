@@ -1,6 +1,5 @@
 import 'package:flutter/widgets.dart';
-import 'package:newztable/core/constants/app_constants.dart';
-import 'package:newztable/core/network/api_client.dart';
+import 'package:newztable/core/network/news_api_service.dart';
 import 'package:newztable/model/article_model.dart';
 
 enum SearchState { idle, loading, success, empty, error }
@@ -23,14 +22,14 @@ class SearchViewModel extends ChangeNotifier {
   Future<void> search(String query) async {
     final trimmed = query.trim();
 
-    if(trimmed.isEmpty) {
+    if (trimmed.isEmpty) {
       _results = [];
       _setState(SearchState.idle);
       return;
     }
 
-    if(trimmed == _lastQuery && _state == SearchState.success) return;
-    
+    if (trimmed == _lastQuery && _state == SearchState.success) return;
+
     _lastQuery = trimmed;
     _currentPage = 1;
     _hasMore = true;
@@ -38,58 +37,35 @@ class SearchViewModel extends ChangeNotifier {
     _setState(SearchState.loading);
 
     try {
-      final response = await ApiClient.get(
-        AppConstants.searchEndpoint,
-        queryParameters: {
-          'q': trimmed,
-          'page': _currentPage,
-          'limit': AppConstants.feedPageSize
-        }
-      );
+      final items = await NewsApiService.searchArticles(trimmed, page: _currentPage);
 
-      final data = response.data as Map<String, dynamic>;
-      final List<dynamic> items = data['items'] as List<dynamic>;
-      final bool hasMore = data['hasMore'] as bool;
-
-      _results = items
-        .map((json) => ArticleModel.fromJson(json as Map<String, dynamic>))
-        .toList();
-      
-      _hasMore = hasMore;
+      _results = items;
+      _hasMore = items.length >= 10;
       _currentPage++;
-      _setState(SearchState.success);
-    } catch(e) {
+
+      if (_results.isEmpty) {
+        _setState(SearchState.empty);
+      } else {
+        _setState(SearchState.success);
+      }
+    } catch (e) {
       _errorMessage = e.toString();
       _setState(SearchState.error);
     }
   }
 
   Future<void> loadMore() async {
-    if(!_hasMore || _state == SearchState.loading) return;
-    _setState(SearchState.loading);
+    if (!_hasMore || _state == SearchState.loading) return;
 
     try {
-      final response = await ApiClient.get(
-        AppConstants.searchEndpoint,
-        queryParameters: {
-          'q': _lastQuery,
-          'page': _currentPage,
-          'limit': AppConstants.feedPageSize
-        }
-      );
+      final items = await NewsApiService.searchArticles(_lastQuery, page: _currentPage);
 
-      final data = response.data as Map<String, dynamic>;
-      final List<dynamic> items = data['items'] as List<dynamic>;
-      final bool hasMore = data['hasMore'] as bool;
-
-      final newResults = items.map((json) => ArticleModel.fromJson(json as Map<String, dynamic>)).toList();
-
-      _results = [..._results, ...newResults];
-      _hasMore = hasMore;
+      _results = [..._results, ...items];
+      _hasMore = items.length >= 10;
       _currentPage++;
 
       _setState(SearchState.success);
-    } catch(e) {
+    } catch (e) {
       _errorMessage = e.toString();
       _setState(SearchState.error);
     }
@@ -98,8 +74,6 @@ class SearchViewModel extends ChangeNotifier {
   void clearSearch() {
     _results = [];
     _lastQuery = '';
-    _currentPage = 1;
-    _hasMore = true;
     _setState(SearchState.idle);
   }
 

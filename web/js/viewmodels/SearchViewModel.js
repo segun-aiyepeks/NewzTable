@@ -1,6 +1,6 @@
-import { searchArticles } from '../services/apiService';
-import { Article } from '../models/Article';
-import { debounce } from '../utils/helpers';
+import { searchArticles } from '../services/apiService.js';
+import { Article } from '../models/Article.js';
+import { debounce } from '../utils/helpers.js';
 
 export class SearchViewModel {
     #results = [];

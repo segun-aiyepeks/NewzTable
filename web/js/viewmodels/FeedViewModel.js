@@ -1,5 +1,5 @@
-import { getFeed } from '../services/apiService';
-import { FeedItem } from '../models/FeedItem';
+import { getFeed } from '../services/apiService.js';
+import { FeedItem } from '../models/FeedItem.js';
 
 export class FeedViewModel {
     #items = [];

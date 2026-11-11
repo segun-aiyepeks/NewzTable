@@ -7,8 +7,17 @@ enum TopicState { idle, loading, success, error }
 
 class TopicViewModel extends ChangeNotifier {
   TopicState _state = TopicState.idle;
-  List<TopicModel> _availableTopics = [];
-  List<TopicModel>_selectedTopics = [];
+  List<TopicModel> _availableTopics = const [
+    TopicModel(key: 'world', label: 'World'),
+    TopicModel(key: 'sports', label: 'Sports'),
+    TopicModel(key: 'politics', label: 'Politics'),
+    TopicModel(key: 'business', label: 'Business'),
+    TopicModel(key: 'health', label: 'Health'),
+    TopicModel(key: 'travel', label: 'Travel'),
+    TopicModel(key: 'science', label: 'Science'),
+    TopicModel(key: 'technology', label: 'Technology'),
+  ];
+  List<TopicModel> _selectedTopics = [];
   String _errorMessage = '';
 
   TopicState get state => _state;
@@ -21,25 +30,34 @@ class TopicViewModel extends ChangeNotifier {
     _setState(TopicState.loading);
 
     try {
-      final response = await ApiClient.get(AppConstants.topicsEndpoint);
-      final List<dynamic> data = response.data as List<dynamic>;
+      if (AppConstants.activeProvider == NewsApiProvider.localBackend) {
+        final response = await ApiClient.get(AppConstants.topicsEndpoint);
+        final List<dynamic> data = response.data as List<dynamic>;
 
-      _availableTopics = data
-        .map((json) => TopicModel.fromJson(json as Map<String, dynamic>))
-        .toList();
-
+        _availableTopics = data
+            .map((json) => TopicModel.fromJson(json as Map<String, dynamic>))
+            .toList();
+      }
       _setState(TopicState.success);
-    } catch(e) {
-      _errorMessage = e.toString();
-      _setState(TopicState.error);
+    } catch (e) {
+      // Use fallback default topics
+      _availableTopics = const [
+        TopicModel(key: 'world', label: 'World'),
+        TopicModel(key: 'sports', label: 'Sports'),
+        TopicModel(key: 'politics', label: 'Politics'),
+        TopicModel(key: 'business', label: 'Business'),
+        TopicModel(key: 'health', label: 'Health'),
+        TopicModel(key: 'travel', label: 'Travel'),
+        TopicModel(key: 'science', label: 'Science'),
+        TopicModel(key: 'technology', label: 'Technology'),
+      ];
+      _setState(TopicState.success);
     }
   }
 
   void toggleTopic(TopicModel topic) {
-    if(_selectedTopics.contains(topic)) {
-      _selectedTopics = _selectedTopics
-        .where((t) => t.key != topic.key)
-        .toList();
+    if (_selectedTopics.contains(topic)) {
+      _selectedTopics = _selectedTopics.where((t) => t.key != topic.key).toList();
     } else {
       _selectedTopics = [..._selectedTopics, topic];
     }
@@ -51,36 +69,7 @@ class TopicViewModel extends ChangeNotifier {
   }
 
   Future<bool> saveSelectedTopics(String deviceId) async {
-    if(!hasEnoughTopics){
-      _errorMessage = 'Please select at least 3 topics';
-      _setState(TopicState.error);
-      return false;
-    }
-
-    _setState(TopicState.loading);
-
-    try{
-      final topicKeys = _selectedTopics.map((t) => t.key).toList();
-
-      await ApiClient.post(
-        AppConstants.initUserEndpoint,
-        data: {
-          'deviceId': deviceId,
-          'topics': topicKeys
-        }
-      );
-
-      _setState(TopicState.success);
-      return true;
-    } catch(e) {
-      _errorMessage = e.toString();
-      _setState(TopicState.error);
-      return false;
-    }
-  }
-
-  Future<bool> updateTopics() async {
-    if(!hasEnoughTopics) {
+    if (!hasEnoughTopics) {
       _errorMessage = 'Please select at least 3 topics';
       _setState(TopicState.error);
       return false;
@@ -91,29 +80,51 @@ class TopicViewModel extends ChangeNotifier {
     try {
       final topicKeys = _selectedTopics.map((t) => t.key).toList();
 
-      await ApiClient.put(
-        AppConstants.updateTopicsEndpoint,
-        data: {'topics': topicKeys}
-      );
+      if (AppConstants.activeProvider == NewsApiProvider.localBackend) {
+        await ApiClient.post(
+          AppConstants.initUserEndpoint,
+          data: {'deviceId': deviceId, 'topics': topicKeys},
+        );
+      }
 
       _setState(TopicState.success);
       return true;
-    } catch(e) {
-      _errorMessage = e.toString();
-      _setState(TopicState.error);
-      return false;
+    } catch (e) {
+      // Even if network fails, allow onboarding to continue locally
+      _setState(TopicState.success);
+      return true;
     }
   }
 
-  void setInitialSelectedTopics(List<String> topicKeys) {
-    _selectedTopics = _availableTopics
-      .where((t) => topicKeys.contains(t.key))
-      .toList();
-    notifyListeners();
+  Future<bool> updateTopics() async {
+    if (!hasEnoughTopics) {
+      _errorMessage = 'Please select at least 3 topics';
+      _setState(TopicState.error);
+      return false;
+    }
+
+    _setState(TopicState.loading);
+
+    try {
+      final topicKeys = _selectedTopics.map((t) => t.key).toList();
+
+      if (AppConstants.activeProvider == NewsApiProvider.localBackend) {
+        await ApiClient.put(
+          AppConstants.updateTopicsEndpoint,
+          data: {'topics': topicKeys},
+        );
+      }
+
+      _setState(TopicState.success);
+      return true;
+    } catch (e) {
+      _setState(TopicState.success);
+      return true;
+    }
   }
 
   void _setState(TopicState state) {
-    _state =state;
+    _state = state;
     notifyListeners();
   }
 }

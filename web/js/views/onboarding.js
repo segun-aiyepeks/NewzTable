@@ -1,6 +1,6 @@
-import { appViewModel } from '../viewmodels/AppViewModel';
-import { escapeHtml, show, hide } from '../utils/helpers';
-import { saveSelectedTopics } from '../services/storageService';
+import { appViewModel } from '../viewmodels/AppViewModel.js';
+import { escapeHtml, show, hide } from '../utils/helpers.js';
+import { saveSelectedTopics } from '../services/storageService.js';
 
 function renderTopicChip(topic, vm) {
     const isSelected = vm.topics.isSelected(topic.key);
